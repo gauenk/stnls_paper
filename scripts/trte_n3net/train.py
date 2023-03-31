@@ -22,7 +22,7 @@ def main():
     print("PID: ",pid)
 
     # -- records --
-    cfg_file = "exps/finetune_n3net.cfg"
+    cfg_file = "exps/trte_n3net/finetune_n3net.cfg"
     exps = cache_io.get_exps(cfg_file)
     records = cache_io.run_exps(exps,train_model.run,
                                 enable_dispatch="slurm")

@@ -25,7 +25,7 @@ def main():
     print("PID: ",pid)
 
     # -- records --
-    cfg_file = "exps/test_finetuned_n3net.cfg"
+    cfg_file = "exps/trte_n3net/test_finetuned_n3net.cfg"
     records = cache_io.run_exps(cfg_file,test_model.run,skip_loop=True)
 
     # -- print table information --
