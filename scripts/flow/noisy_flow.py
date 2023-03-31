@@ -27,13 +27,13 @@ def main():
     print("PID: ",pid)
 
     # -- run experiments --
-    records = cache_io.run_exps("exps/noisy_flow.cfg",
+    records = cache_io.run_exps("exps/flow/noisy_flow.cfg",
                                 test_model.run,
                                 name=".cache_io/noisy_flow",
                                 version="v1",
                                 skip_loop=True,
                                 records_fn=".cache_io_pkl/noisy_flow.pkl",
-                                records_reload=False)
+                                records_reload=True)
 
     # -- compress metrics --
     ffields = {"k_s":[100]}

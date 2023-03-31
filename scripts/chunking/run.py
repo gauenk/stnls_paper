@@ -3,6 +3,7 @@
 Assess the impact of cropping.
 
 """
+
 # -- misc --
 import os
 import pprint
@@ -41,14 +42,14 @@ def main():
     archs = ["colanet","n3net","lidia"]
     for arch in archs:
         for cat in category:
-            exp_files.append("exps/%s_cropping_%s.cfg" % (cat,arch))
+            exp_files.append("exps/chunking/%s_cropping_%s.cfg" % (cat,arch))
 
     # -- run/load experiments --
     records = cache_io.run_exps(exp_files,test_model.run,
                                 name=".cache_io/chunking",
                                 version="v1",skip_loop=True,
                                 records_fn=".cache_io_pkl/chunking.pkl",
-                                records_reload=False)
+                                records_reload=True)
 
     # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     #

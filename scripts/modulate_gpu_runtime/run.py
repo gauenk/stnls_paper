@@ -23,10 +23,11 @@ def main():
     print("PID: ",pid)
 
     # -- get/run cached records --
-    cfg_file = "exps/modulate_gpu_runtime.cfg"
+    cfg_file = "exps/modulate_gpu_runtime/base.cfg"
     records = cache_io.run_exps(cfg_file,test_model.run,
                                 name=".cache_io/modulate_gpu_runtime",
-                                version="v1",skip_loop=True)
+                                version="v1",skip_loop=True,
+                                records_reload=False)
 
     # -- plots --
     plots.modulate_gpu_runtime.run(records)
