@@ -1,0 +1,27 @@
+This file maps figures and tables to scripts.
+
+Figure 1: intro_fig
+Figure 2: show_flow
+Figure 3: (not included; draw.io)
+Figure 4: (not included; draw.io)
+Figure 5: race_cond
+Figure 6: get_examples
+Figure 7: search_space
+Figure 8: noisy_flow
+Figure 9: get_examples
+Figure 10: modulate_gpu_runtime
+Figure 11: resolution_scaling
+Figure 12: nl_approx_attn
+Figure 13: compare_search
+Figure 14: (not included; draw.io)
+Figure 15: (not included; draw.io)
+Figure 16: (not included; draw.io)
+Figure 17: compare_agg
+Figure 18: get_examples
+Figure 19: chunking
+Figure 20: race_cond
+
+Table 1: test_finetuned_colanet
+Table 2: test_models
+Table 3: test_models
+Table 4: test_finetuned_n3net

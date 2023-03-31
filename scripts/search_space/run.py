@@ -26,14 +26,15 @@ def main():
     print("PID: ",pid)
 
     # -- run experiments --
-    exps = ["exps/search_space_colanet.cfg",
-            "exps/search_space_n3net.cfg",
-            "exps/search_space_lidia.cfg"]
+    exps = ["exps/search_space/search_space_colanet.cfg",
+            "exps/search_space/search_space_n3net.cfg",
+            "exps/search_space/search_space_lidia.cfg"]
     records = cache_io.run_exps(exps,test_model.run,
                                 name=".cache_io/search_space",
                                 version="v1",
-                                records_fn =".search_space.pkl",
-                                records_reload=False,
+                                # records_fn =".search_space.pkl",
+                                records_fn =".cache_io_pkl/search_space.pkl",
+                                records_reload=True,
                                 skip_loop=True)
 
     # -=-=-=-=-=-=-=-=-=-=-=-=-=-
