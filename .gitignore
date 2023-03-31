@@ -1,7 +1,8 @@
 *txt
 ./slurm*
+./reqs/*~
 .*
-.aaai23
+dispatch/*
 .tmp
 .cache_io
 output
