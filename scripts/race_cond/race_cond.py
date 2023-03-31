@@ -1,0 +1,40 @@
+"""
+
+This graphic shows the errors incurred by the race condition
+
+"""
+
+import os
+import numpy as np
+
+import cache_io
+from icml23 import race_cond
+from icml23 import plots
+
+def main():
+
+    # -- start info --
+    verbose = True
+    pid = os.getpid()
+    print("PID: ",pid)
+
+    # -- get/run cached records --
+    exps = cache_io.get_exp_list("exps/race_cond.cfg")
+    records = cache_io.run_exps(exps,race_cond.run_exp,
+                                name=".cache_io/race_cond",
+                                version="v1",skip_loop=True,
+                                records_fn=".cache_io_pkl/race_cond_agg.pkl",
+                                records_reload=False)
+    # -- plot --
+    plots.race_cond.run(records)
+
+    # -- plot time vs error --
+    fields = {"query_pt":2,"neigh_pt":2}
+    records_f = records
+    for field,val in fields.items():
+        records_f = records_f[records_f[field] == val]
+    plots.race_cond_v2.run(records_f)
+
+if __name__ == "__main__":
+    main()
+
