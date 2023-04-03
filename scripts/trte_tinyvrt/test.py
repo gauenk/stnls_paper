@@ -33,16 +33,16 @@ def main():
     def clear_fxn(num,cfg):
         return False
     read_test = cache_io.read_test_config.run
-    exps = read_test("exps/tiny_vrt/test.cfg",
-                     cache_name=".cache_io_exps/tiny_vrt/test")
-    exps,uuids = cache_io.get_uuids(exps,".cache_io/tiny_vrt/test",read=True)
+    exps = read_test("exps/trte_tinyvrt/test.cfg",
+                     cache_name=".cache_io_exps/trte_tinyvrt/test")
+    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_tinyvrt/test")
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
-                                name=".cache_io/tiny_vrt/test",
+                                name=".cache_io/trte_tinyvrt/test",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
-                                records_fn=".cache_io_pkl/tiny_vrt/test.pkl",
+                                records_fn=".cache_io_pkl/trte_tinyvrt/test.pkl",
                                 records_reload=False,to_records_fast=False)
 
     # print(len(results))
