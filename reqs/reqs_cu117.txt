@@ -30,8 +30,8 @@ idna==3.4
 imageio==2.22.2
 iniconfig==1.1.1
 isort==5.10.1
-jax==0.3.0
-jaxlib @ https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.3.0+cuda11.cudnn805-cp310-none-manylinux2010_x86_64.whl
+# jax==0.3.0
+# jaxlib @ https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.3.0+cuda11.cudnn805-cp310-none-manylinux2010_x86_64.whl
 joblib==1.2.0
 kiwisolver==1.4.4
 lazy-object-proxy==1.7.1
