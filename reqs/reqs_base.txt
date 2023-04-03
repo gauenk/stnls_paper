@@ -19,4 +19,4 @@ matplotlib
 easydict
 flake8
 joblib
-
+pyyaml

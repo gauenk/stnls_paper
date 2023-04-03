@@ -35,10 +35,10 @@ from pathlib import Path
 from easydict import EasyDict as edict
 
 # -- results packages --
-import dnls
-from dnls.utils.misc import rslice,read_pickle,write_pickle
-from dnls.utils.timer import ExpTimer
-from dnls.utils.inds import get_nums_hw
+import stnls
+from stnls.utils.misc import rslice,read_pickle,write_pickle
+from stnls.utils.timer import ExpTimer
+from stnls.utils.inds import get_nums_hw
 #get_batching_info
 
 
