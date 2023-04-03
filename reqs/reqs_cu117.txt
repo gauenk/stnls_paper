@@ -83,6 +83,7 @@ tifffile==2022.10.10
 tomli==2.0.1
 tomlkit==0.11.5
 tqdm==4.64.1
+tqdm_joblib
 typing_extensions==4.4.0
 urllib3==1.26.12
 vpss==0.0.2
