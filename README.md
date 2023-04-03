@@ -66,4 +66,5 @@ Happy Hacking!
     `python ./scripts/trte_NAME/test.py --job_id TEST_NAME_HERE --nexps NUM_EXPS --nexps_pp EXPS_PER_PROC --merge_cache --fast --skip_loop`
     `python ./scripts/trte_NAME/test.py NUM_EXPS EXPS_PER_PROC -J TEST_NAME_HERE --merge_cache --fast --skip_loop`
     `merge_cache DEST_CACHE NUM_EXPS EXPS_PER_PROC TEST_NAME_HERE`
-
+4.) Create a pickle to store the final results for faster io each time.
+    `python ./scripts/f2f/test.py --skip_loop`
