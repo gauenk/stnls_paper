@@ -43,3 +43,27 @@ When benchmarking our methods, we ensure nothing else on our computer is running
 Each visual element in the paper has a corresponding script. See "docs/visual_elements.txt" for a mapping.
 
 Happy Hacking!
+
+
+# Running a "trte_*" script
+
+## Training
+
+1.) Init the uuids in the base cache:
+    `python ./scripts/trte_NAME/train.py --skip_loop`
+2.) Launch training on separate machines:
+    `sbatch_py ./scripts/trte_NAME/train.py NUM_EXPS EXPS_PER_PROC -U -J TRAIN_NAME_HERE`
+3.) Optionally, merge the results
+    `merge_cache DEST_CACHE NUM_EXPS EXPS_PER_PROC TRAIN_NAME_HERE`
+
+## Testing
+
+1.) Init the pretrained_paths in the base cache configs:
+    `python ./scripts/trte_NAME/test.py --skip_loop`
+2.) Launch training on separate machines:
+    `sbatch_py ./scripts/trte_NAME/test.py NUM_EXPS EXPS_PER_PROC -U -J TEST_NAME_HERE`
+3.) Non-optionally, merge the results. Many ways to do this:
+    `python ./scripts/trte_NAME/test.py --job_id TEST_NAME_HERE --nexps NUM_EXPS --nexps_pp EXPS_PER_PROC --merge_cache --fast --skip_loop`
+    `python ./scripts/trte_NAME/test.py NUM_EXPS EXPS_PER_PROC -J TEST_NAME_HERE --merge_cache --fast --skip_loop`
+    `merge_cache DEST_CACHE NUM_EXPS EXPS_PER_PROC TEST_NAME_HERE`
+
