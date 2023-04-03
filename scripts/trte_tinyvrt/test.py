@@ -15,8 +15,8 @@ import pandas as pd
 from dev_basics.trte import test
 
 # -- plotting --
-import apsearch
-from apsearch import plots
+# import stnls_paper
+# from stnls_paper import plots
 
 # -- caching results --
 import cache_io

@@ -14,7 +14,7 @@ import pandas as pd
 from dev_basics.trte import train
 
 # -- plotting --
-from apsearch import plots
+from stnls_paper import plots
 
 # -- caching results --
 import cache_io
