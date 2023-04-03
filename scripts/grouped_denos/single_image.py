@@ -7,8 +7,8 @@ import numpy as np
 import cache_io
 
 # -- network configs --
-from dnls_paper import test_model
-from dnls_paper import reports
+from stnls_paper import test_model
+from stnls_paper import reports
 
 def main():
 

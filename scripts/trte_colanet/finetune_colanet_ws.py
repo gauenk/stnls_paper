@@ -11,8 +11,8 @@ import os
 import cache_io
 
 # -- network configs --
-from dnls_paper import train_model
-from dnls_paper import reports
+from stnls_paper import train_model
+from stnls_paper import reports
 
 def main():
 
