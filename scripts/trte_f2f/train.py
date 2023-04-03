@@ -30,13 +30,13 @@ def main():
     # -- get/run experiments --
     def clear_fxn(num,cfg):
         return False
-    exps,uuids = cache_io.train_stages.run("exps/f2f/train.cfg",
-                                           ".cache_io_exps/f2f/train/")
+    exps,uuids = cache_io.train_stages.run("exps/trte_f2f/train.cfg",
+                                           ".cache_io_exps/trte_f2f/train/")
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
-                                name=".cache_io/f2f/train",
+                                name=".cache_io/trte_f2f/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
-                                records_fn=".cache_io_pkl/f2f/train.pkl",
+                                records_fn=".cache_io_pkl/trte_f2f/train.pkl",
                                 records_reload=False)
 
 

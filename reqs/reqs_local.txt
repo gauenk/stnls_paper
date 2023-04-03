@@ -1,5 +1,4 @@
 -e ../dev_basics
--e ../stnls
 -e ../cache_io
 -e ../dev_basics
 -e ../data_hub
@@ -7,4 +6,5 @@
 -e ../colanet
 -e ../lidia
 -e ../mvit
+-e ../stnls
 -e .

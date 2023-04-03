@@ -14,7 +14,7 @@ import cache_io
 import numpy as np
 
 # -- network configs --
-from dnls_paper import reports
+from stnls_paper import reports
 
 # -- bench --
 from dev_basics.trte import test

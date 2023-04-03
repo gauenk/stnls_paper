@@ -34,10 +34,10 @@ from pathlib import Path
 from easydict import EasyDict as edict
 
 # -- results packages --
-import dnls
-from dnls.utils.misc import rslice
-from dnls.utils.timer import ExpTimer
-from dnls.utils.inds import get_nums_hw
+import stnls
+from stnls.utils.misc import rslice
+from stnls.utils.timer import ExpTimer
+from stnls.utils.inds import get_nums_hw
 #get_batching_info
 
 # -- local --
@@ -106,7 +106,7 @@ def compute_exact_grad(search,noisy,ntotal,dists_grad,use_simp=False):
 
     # -- exec --
     if use_simp:
-        run_bwd = dnls.simple.search_bwd.run
+        run_bwd = stnls.simple.search_bwd.run
         grad0,grad1 = run_bwd(dists_grad,vid0,vid1,inds,0,stride0,
                               ps,pt,dil,use_adj,reflect_bounds)
         grad = grad0+grad1
@@ -164,11 +164,11 @@ def run_exp(cfg):
     noisy /= 255.
 
     # -- init search --
-    esearch = dnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
+    esearch = stnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
                                cfg.pt,cfg.ws,cfg.wt,-1,dil,stride0=cfg.stride0,
                                stride1=cfg.stride1,nbwd=1,use_adj=use_adj,
                                rbwd=False,exact=True)
-    search = dnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
+    search = stnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
                               cfg.pt,cfg.ws,cfg.wt,-1,dil,stride0=cfg.stride0,
                               stride1=cfg.stride1,nbwd=cfg.nbwd,use_adj=use_adj,
                               rbwd=rbwd,exact=exact,nbwd_mode=nbwd_mode,
@@ -222,7 +222,7 @@ def run_exp(cfg):
             for ci in range(c):
                 # print(diff2.shape,ci)
                 fn = "diff_%s_%d" % (cfg.uuid,ci)
-                dnls.testing.data.save_burst(diff2[:,[ci]],SAVE_DIR,fn)
+                stnls.testing.data.save_burst(diff2[:,[ci]],SAVE_DIR,fn)
 
         # -- accumuate deno --
         dtime += dtime_i
@@ -234,12 +234,12 @@ def run_exp(cfg):
     for ci in range(c):
         print(ci,emap[:,ci].max().item())
         fn = "emap_nodiv_%s_%d" % (cfg.uuid,ci)
-        dnls.testing.data.save_burst(emap[:,[ci]],SAVE_DIR,fn)
+        stnls.testing.data.save_burst(emap[:,[ci]],SAVE_DIR,fn)
 
     emap /= emap.max().item()
     for ci in range(c):
         fn = "emap_%s_%d" % (cfg.uuid,ci)
-        dnls.testing.data.save_burst(emap[:,[ci]],SAVE_DIR,fn)
+        stnls.testing.data.save_burst(emap[:,[ci]],SAVE_DIR,fn)
 
     # -- average times --
     dtime /= cfg.nreps
