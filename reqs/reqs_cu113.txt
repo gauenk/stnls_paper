@@ -5,3 +5,4 @@ torchvision==0.13.1+cu113
 # jax==0.3.0
 # jaxlib @ https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.3.0+cuda11.cudnn805-cp310-none-manylinux2010_x86_64.whl
 pytorch-lightning==1.9.4
+timm
