@@ -32,7 +32,7 @@ def main():
         return False
     exps,uuids = cache_io.train_stages.run("exps/trte_segvit/train.cfg",
                                            ".cache_io/trte_segvit/train/",
-                                           load_complete=True,stage_select=0)
+                                           reset=True)
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_segvit/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,

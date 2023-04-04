@@ -6,5 +6,7 @@
 -e ../colanet
 -e ../lidia
 -e ../mvit
+-e ../frame2frame
 -e ../stnls
+-e ../detectron2
 -e .

@@ -20,3 +20,4 @@ easydict
 flake8
 joblib
 pyyaml
+timm
