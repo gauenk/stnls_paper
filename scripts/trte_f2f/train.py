@@ -2,7 +2,7 @@
 
 Unsupervised Training with Frame2Frame
 
-Compare the impact of train/test using exact/refineimate methods
+Compare the impact of train/test using flow/nls methods
 
 """
 
@@ -33,10 +33,7 @@ def main():
     # -- get/run experiments --
     exps,uuids = cache_io.train_stages.run("exps/trte_f2f/train.cfg",
                                            ".cache_io_exps/trte_f2f/train/")
-    def clear_fxn(num,cfg):
-        # uuid = uuids[num]
-        # clear_bool = "crit_name" in cfg and cfg["crit_name"] == "stnls"
-        return False
+    def clear_fxn(num,cfg): return False
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_f2f/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
