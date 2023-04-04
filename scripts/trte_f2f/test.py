@@ -28,7 +28,7 @@ def main():
     # -- get/run experiments --
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_f2f/test.cfg",
-                     cache_name=".cache_io_exps/trte_f2f/test")
+                     cache_name=".cache_io_exps/trte_f2f/test",reset=True)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_f2f/test",
                                     reset=True,no_config_check=True)
 
