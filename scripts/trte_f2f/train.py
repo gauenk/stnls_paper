@@ -33,7 +33,6 @@ def main():
     # -- get/run experiments --
     exps,uuids = cache_io.train_stages.run("exps/trte_f2f/train.cfg",
                                            ".cache_io_exps/trte_f2f/train/")
-    print(len(exps))
     def clear_fxn(num,cfg): return False
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_f2f/train",
@@ -41,7 +40,13 @@ def main():
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_f2f/train.pkl",
                                 records_reload=False)
-
+    # -- view --
+    print(len(results))
+    print(results.columns)
+    results = results[results['dset_tr'] == 'tr'].reset_index(drop=True)
+    results = results[results['dname'] == 'davis'].reset_index(drop=True)
+    results = results[results['limit_train_batches'] == 1.0].reset_index(drop=True)
+    print(results[['crit_name','ps','stride0','train_time']])
 
 if __name__ == "__main__":
     main()
