@@ -28,9 +28,8 @@ def main():
     # -- get/run experiments --
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_f2f/test.cfg",
-                     cache_name=".cache_io_exps/trte_f2f/test",reset=True)
-    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_f2f/test",
-                                    reset=True,no_config_check=True)
+                     cache_name=".cache_io_exps/trte_f2f/test")
+    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_f2f/test")
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
@@ -45,7 +44,7 @@ def main():
     print(len(results))
     if len(results) == 0: return
     afields = ['psnrs','ssims','strred']
-    gfields = ["search_input","crit_name","dist_crit","alpha",
+    gfields = ["search_input","crit_name","dist_crit","alpha","stride0",
                "ps","k","ws","wt","gradient_clip_val","dset_tr","sigma"]
     print(len(results[gfields].drop_duplicates()))
     # results = results[results['vid_name'] == "sunflower"].reset_index(drop=True)
@@ -54,10 +53,21 @@ def main():
     agg_fxn = lambda x: np.mean(np.stack(x))
     summary = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     summary = summary.reset_index()[gfields + afields]
-    print(summary)
-    # print(summary['psnrs'].nlargest(10))
-    # print(summary['psnrs'].nlargest(10).index)
-    print(summary.iloc[summary['psnrs'].nlargest(30).index])
+
+    key = 'psnrs'
+    # key = 'ssims'
+    gfields = ["search_input","crit_name","dist_crit","alpha","ps","stride0","ws"]
+    for group,gdf in summary.groupby(gfields[:8]):
+        print("Group: ",group)
+        # print(gdf[[key,"gradient_clip_val"]].T)
+        print(gdf.T)
+        # print(gdf.iloc[gdf[key].nlargest(30).index])
+        # print(gdf.iloc[gdf[key].nlargest(1).index[0]])
+        # print(gdf.iloc[gdf[key].nlargest(2).index[1]])
+    # print(summary)
+    # print(summary.iloc[summary[key].nlargest(30).index])
+    # print(summary.iloc[summary[key].nlargest(30).index[0]])
+    # print(summary.iloc[summary[key].nlargest(30).index[1]])
 
     # print(results[afields + ["vid_name","sigma"]])
 
