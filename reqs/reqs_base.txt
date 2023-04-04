@@ -12,6 +12,7 @@ requests
 protobuf
 einops
 flake8
+pylint
 easydict
 scikit-image
 scikit-video
