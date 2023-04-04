@@ -37,7 +37,7 @@ def main():
                                 version="v1",skip_loop=False,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_f2f/test.pkl",
-                                records_reload=False,to_records_fast=True)
+                                records_reload=True,to_records_fast=True)
 
     # print(len(results))
     results = results.fillna("None")
