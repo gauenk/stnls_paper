@@ -2,7 +2,7 @@
 
 import subprocess
 pkgs = ["dev_basics","cache_io","dev_basics","data_hub",
-        "n3net","colanet","lidia","mvit","frame2frame"]
+        "n3net","colanet","lidia","mvit","frame2frame","nlnet"]
 cmd_fmt = "cd ../%s; git pull; cd ../stnls_paper"
 check_me = []
 check_me_msg = []

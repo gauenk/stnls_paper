@@ -31,9 +31,9 @@ def main():
     exps,uuids = cache_io.train_stages.run("exps/trte_tinyvrt/train.cfg",
                                            ".cache_io/trte_tinyvrt/train/")#,update=True)
                                            # load_complete=True,stage_select=0)
-    print(len(exps))
-    print(uuids[:5])
-    print(uuids[-5:])
+    # print(len(exps))
+    # print(uuids[:5])
+    # print(uuids[-5:])
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_tinyvrt/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,

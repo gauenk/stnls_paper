@@ -36,6 +36,7 @@ def main():
     exps = read_test("exps/trte_tinyvrt/test.cfg",
                      cache_name=".cache_io_exps/trte_tinyvrt/test")
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_tinyvrt/test")
+    # print(len(exps))
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
@@ -43,15 +44,23 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_tinyvrt/test.pkl",
-                                records_reload=False,to_records_fast=False)
+                                records_reload=False,to_records_fast=True)
 
-    # print(len(results))
+    print(len(results))
     if len(results) == 0: return
+    results = results[results["spynet_path"] != ""].reset_index(drop=True)
     afields = ['psnrs','ssims','strred']
+    gfields = ["sigma","gradient_clip_val",'rate']
+    agg_fxn = lambda x: np.mean(np.stack(x))
+    results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     for f in afields: results[f] = results[f].apply(np.mean)
-    for sigma,sdf in results[afields + ["vid_name","sigma"]].groupby("sigma"):
-        print(sigma)
-        print(sdf)
+    results = results.reset_index()[gfields + afields]
+    print(len(results))
+    print(results)
+
+    # for sigma,sdf in results[afields + gfields].groupby("sigma"):
+    #     print(sigma)
+    #     print(sdf)
     # print(results[afields + ["vid_name","sigma"]])
 
 if __name__ == "__main__":
