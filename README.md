@@ -30,9 +30,9 @@ To standardize dataset access, read/write experimental results, and share some c
 
 Please install the Set8 and DAVIS datasets into your system. The "data_hub" package requires you specify the paths in the "path.py" files under the "data_hub/lib/data_hub/sets/davis" and "data_hub/lib/data_hub/sets/set8" directory.
 
---- DNLS ---
+--- STNLS ---
 
-Our primary code is contained within the DNLS module. The CUDA code for the DNLS module is within the "lib/csrc/search" directory. The additional cuda kernels are in the "tile", "tile_k" and "reducers" directory.
+Our primary code is contained within the STNLS module. The CUDA code for the STNLS module is within the "lib/csrc/search" directory. The additional cuda kernels are in the "tile", "tile_k" and "reducers" directory.
 
 --- Benchmarking Note ---
 
