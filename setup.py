@@ -17,11 +17,11 @@ import glob
 # -- file paths --
 long_description="""Code for publication"""
 setup(
-    name='dnls_paper',
+    name='stnls_paper',
     version='100.100.100',
     description='Some shared basics',
     long_description=long_description,
-    url='https://github.com/gauenk/dnls_paper',
+    url='https://github.com/gauenk/stnls_paper',
     author='Kent Gauen',
     author_email='gauenk@purdue.edu',
     license='MIT',

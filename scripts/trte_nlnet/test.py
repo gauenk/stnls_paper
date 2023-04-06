@@ -55,4 +55,5 @@ def main():
     # print(results[afields + ["vid_name","sigma"]])
 
 if __name__ == "__main__":
+    print("hi.")
     main()
