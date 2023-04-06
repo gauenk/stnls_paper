@@ -29,11 +29,10 @@ def main():
     def clear_fxn(num,cfg):
         return False
     read_test = cache_io.read_test_config.run
-    exps = read_test("exps/trte_segvit/test.cfg",
-                     cache_name=".cache_io_exps/trte_segvit/test",
-                     cache_reset=False)
+    exps = read_test("exps/trte_segvit/test.cfg",".cache_io_exps/trte_segvit/test",
+                     reset=True)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_segvit/test",
-                                    no_config_check=False)
+                                    reset=True,no_config_check=True)
 
     # -- run exps --
     results = cache_io.run_exps(exps,test_seg.run,uuids=uuids,
