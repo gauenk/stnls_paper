@@ -32,11 +32,7 @@ def main():
     print(len(exps))
 
     # -- get bench--
-    bench.print_summary(exps[0],(1,3,3,128,128))
-
-    # print(len(exps))
-    # print(uuids[:5])
-    # print(uuids[-5:])
+    # bench.print_summary(exps[0],(1,3,3,128,128))
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_tinyvrt/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,

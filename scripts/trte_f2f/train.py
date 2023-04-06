@@ -32,16 +32,18 @@ def main():
 
     # -- get/run experiments --
     exps,uuids = cache_io.train_stages.run("exps/trte_f2f/train.cfg",
-                                           ".cache_io_exps/trte_f2f/train/")
+                                           ".cache_io_exps/trte_f2f/train/",reset=True)
+    print(len(exps))
     def clear_fxn(num,cfg): return False
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_f2f/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_f2f/train.pkl",
-                                records_reload=False)
+                                records_reload=True)
     # -- view --
     print(len(results))
+    if len(results) == 0: return
     print(results.columns)
     results = results[results['dset_tr'] == 'tr'].reset_index(drop=True)
     results = results[results['dname'] == 'davis'].reset_index(drop=True)
