@@ -28,8 +28,7 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    def clear_fxn(num,cfg):
-        return False
+    def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_segvit/train.cfg",
                                            ".cache_io/trte_segvit/train/",
                                            reset=True)

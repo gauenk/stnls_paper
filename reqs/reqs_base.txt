@@ -22,3 +22,5 @@ flake8
 joblib
 pyyaml
 timm
+cityscapesscripts
+
