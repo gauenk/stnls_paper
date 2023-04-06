@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 # -- testing --
-from dev_basics.trte import train
+from dev_basics.trte import train,bench
 
 # -- caching results --
 import cache_io
@@ -39,6 +39,7 @@ def main():
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_nlnet/train.pkl",
                                 records_reload=True)
+
 
 
 if __name__ == "__main__":

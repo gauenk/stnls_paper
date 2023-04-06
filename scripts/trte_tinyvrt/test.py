@@ -10,9 +10,10 @@ Compare the impact of train/test using exact/refineimate methods
 import os
 import numpy as np
 import pandas as pd
+from easydict import EasyDict as edict
 
 # -- testing --
-from dev_basics.trte import test
+from dev_basics.trte import test,bench
 
 # -- plotting --
 # import stnls_paper
@@ -46,6 +47,10 @@ def main():
                                 records_fn=".cache_io_pkl/trte_tinyvrt/test.pkl",
                                 records_reload=False,to_records_fast=True)
 
+    # -- get bench--
+    bench.print_summary(exps[0],(1,3,3,128,128))
+
+    # -- view --
     print(len(results))
     if len(results) == 0: return
     results = results[results["spynet_path"] != ""].reset_index(drop=True)

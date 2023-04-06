@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 # -- testing --
-from dev_basics.trte import train
+from dev_basics.trte import train,bench
 
 # -- caching results --
 import cache_io
@@ -26,11 +26,14 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    def clear_fxn(num,cfg):
-        return False
+    def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_tinyvrt/train.cfg",
-                                           ".cache_io/trte_tinyvrt/train/")#,update=True)
-                                           # load_complete=True,stage_select=0)
+                                           ".cache_io/trte_tinyvrt/train/")
+    print(len(exps))
+
+    # -- get bench--
+    bench.print_summary(exps[0],(1,3,3,128,128))
+
     # print(len(exps))
     # print(uuids[:5])
     # print(uuids[-5:])
