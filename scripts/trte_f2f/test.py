@@ -28,8 +28,10 @@ def main():
     # -- get/run experiments --
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_f2f/test.cfg",
-                     cache_name=".cache_io_exps/trte_f2f/test")
+                     ".cache_io_exps/trte_f2f/test")
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_f2f/test")
+    print(len(exps))
+
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
                                 name=".cache_io/trte_f2f/test",
@@ -43,8 +45,8 @@ def main():
     print(len(results))
     if len(results) == 0: return
     afields = ['psnrs','ssims','strred']
-    gfields = ["search_input","crit_name","dist_crit","alpha","stride0",
-               "ps","k","ws","wt","gradient_clip_val","dset_tr","sigma"]
+    gfields = ["search_input","crit_name","dist_crit","stride0",
+               "ps","k","ws","wt","gradient_clip_val","dset_tr","sigma",'nepochs']
     print(len(results[gfields].drop_duplicates()))
     # results = results[results['vid_name'] == "sunflower"].reset_index(drop=True)
     print(results)
@@ -55,8 +57,8 @@ def main():
 
     key = 'psnrs'
     # key = 'ssims'
-    gfields = ["search_input","crit_name","dist_crit","alpha","ps","stride0","ws"]
-    for group,gdf in summary.groupby(gfields[:8]):
+    gfields = ["search_input","crit_name","dist_crit","ps","stride0","ws",'nepochs']
+    for group,gdf in summary.groupby(gfields):
         print("Group: ",group)
         # print(gdf[[key,"gradient_clip_val"]].T)
         print(gdf.T)

@@ -32,7 +32,7 @@ def main():
 
     # -- get/run experiments --
     exps,uuids = cache_io.train_stages.run("exps/trte_f2f/train.cfg",
-                                           ".cache_io_exps/trte_f2f/train/",reset=True)
+                                           ".cache_io_exps/trte_f2f/train/")
     print(len(exps))
     def clear_fxn(num,cfg): return False
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
