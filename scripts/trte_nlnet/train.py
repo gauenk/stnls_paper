@@ -28,11 +28,14 @@ def main():
     # -- get/run experiments --
     def clear_fxn(num,cfg):
         return False
+    read_filter = {"nepochs":50}
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet/train.cfg",
-                                           ".cache_io/trte_nlnet/train/")
+                                           ".cache_io/trte_nlnet/train/",
+                                           read_filter=read_filter)
+
     print(len(exps))
-    # print(uuids[:5])
-    # print(uuids[-5:])
+    print(uuids[:5])
+    print(uuids[-5:])
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_nlnet/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,

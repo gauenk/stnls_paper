@@ -37,7 +37,7 @@ def main():
     exps = read_test("exps/trte_tinyvrt/test.cfg",
                      cache_name=".cache_io_exps/trte_tinyvrt/test")
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_tinyvrt/test")
-    # print(len(exps))
+    print(len(exps))
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
@@ -48,7 +48,7 @@ def main():
                                 records_reload=False,to_records_fast=True)
 
     # -- get bench--
-    bench.print_summary(exps[0],(1,3,3,128,128))
+    # bench.print_summary(exps[0],(1,3,3,128,128))
 
     # -- view --
     print(len(results))

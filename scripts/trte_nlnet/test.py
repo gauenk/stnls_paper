@@ -43,16 +43,16 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_nlnet/test.pkl",
-                                records_reload=False,to_records_fast=True)
+                                records_reload=True,to_records_fast=True)
 
     # -- get bench--
-    bench.print_summary(exps[0],(1,3,3,128,128))
+    # bench.print_summary(exps[0],(1,3,3,128,128))
 
     # -- view --
     print(len(results))
     if len(results) == 0: return
     afields = ['psnrs','ssims','strred']
-    gfields = ["sigma","gradient_clip_val",'rate']
+    gfields = ["sigma","gradient_clip_val",'rate','nepochs']
     agg_fxn = lambda x: np.mean(np.stack(x))
     results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     for f in afields: results[f] = results[f].apply(np.mean)
