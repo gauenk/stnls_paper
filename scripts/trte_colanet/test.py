@@ -27,13 +27,22 @@ def main():
     pid = os.getpid()
     print("PID: ",pid)
 
-    # -- records --
-    cfg_file = "exps/trte_colanet/test.cfg"
-    records = cache_io.run_exps(cfg_file,test.run,
-                                # name="trte_colanet/test",
-                                # name=".cache_io/test_colanet_01_04/",
-                                name=".cache_io/test_colanet_01_02/",
-                                skip_loop=False)
+    # -- get/run experiments --
+    def clear_fxn(num,cfg):
+        return False
+    read_test = cache_io.read_test_config.run
+    exps = read_test("exps/trte_colanet/test.cfg",
+                     cache_name=".cache_io_exps/trte_colanet/test",reset=True)
+    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
+                                    reset=True,no_config_check=True)
+
+    # -- run exps --
+    results = cache_io.run_exps(exps,test.run,uuids=uuids,
+                                name=".cache_io/trte_colanet/test",
+                                version="v1",skip_loop=False,clear_fxn=clear_fxn,
+                                clear=False,enable_dispatch="slurm",
+                                records_fn=".cache_io_pkl/trte_colanet/test.pkl",
+                                records_reload=False,to_records_fast=True)
 
     # -- print table information --
     print(records)

@@ -28,20 +28,16 @@ def main():
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_colanet/train.cfg",
                                            ".cache_io/trte_colanet/train/")
-    # -- filter --
-    exps_,uuids_ = exps,uuids
-    exps,uuids = [],[]
-    for e,u in zip(exps_,uuids_):
-        # print(e.gradient_clip_val)
-        if e.wt == 3 and e.read_flow == True and e.sigma == 50:
-            exps.append(e)
-            uuids.append(u)
     print("Num Exps: ",len(exps))
-    records = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
+    results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_colanet/train",
-                                enable_dispatch="slurm")
+                                version="v1",skip_loop=False,clear_fxn=clear_fxn,
+                                clear=False,enable_dispatch="slurm",
+                                records_fn=".cache_io_pkl/trte_colanet/train.pkl",
+                                records_reload=True)
     # -- view --
-    print(records.head())
+    if len(results) == 0: return
+    print(results.head())
 
 
 if __name__ == "__main__":
