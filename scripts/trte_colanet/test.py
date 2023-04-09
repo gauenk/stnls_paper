@@ -28,13 +28,14 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    def clear_fxn(num,cfg):
-        return False
+    refresh = False
+    def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_colanet/test.cfg",
-                     cache_name=".cache_io_exps/trte_colanet/test",reset=True)
+                     ".cache_io_exps/trte_colanet/test",reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
-                                    reset=True,no_config_check=True)
+                                    reset=refresh,no_config_check=refresh)
+    print(len(exps))
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
@@ -42,10 +43,19 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_colanet/test.pkl",
-                                records_reload=False,to_records_fast=True)
+                                records_reload=True,to_records_fast=True)
 
-    # -- print table information --
-    print(records)
+    # -- view --
+    print(len(results))
+    if len(results) == 0: return
+    afields = ['psnrs','ssims','strred']
+    gfields = ["sigma","gradient_clip_val",'read_flow','wt','rbwd']
+    agg_fxn = lambda x: np.mean(np.stack(x))
+    results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
+    for f in afields: results[f] = results[f].apply(np.mean)
+    results = results.reset_index()[gfields + afields]
+    print(len(results))
+    print(results)
 
 if __name__ == "__main__":
     main()
