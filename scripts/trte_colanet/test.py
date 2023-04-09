@@ -49,7 +49,7 @@ def main():
     print(len(results))
     if len(results) == 0: return
     afields = ['psnrs','ssims','strred']
-    gfields = ["sigma","gradient_clip_val",'read_flow','wt','rbwd']
+    gfields = ["sigma","gradient_clip_val",'read_flows','wt','rbwd']
     agg_fxn = lambda x: np.mean(np.stack(x))
     results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     for f in afields: results[f] = results[f].apply(np.mean)
