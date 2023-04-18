@@ -25,6 +25,7 @@ def main():
     print("PID: ",pid)
 
     # -- records --
+    refresh = False
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_colanet/train.cfg",
                                            ".cache_io/trte_colanet/train/")
