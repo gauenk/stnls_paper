@@ -37,7 +37,7 @@ def main():
                      ".cache_io_exps/trte_nlnet/test",reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_nlnet/test",
                                     reset=refresh,no_config_check=refresh)
-    print(len(exps))
+    print("len(exps): ",len(exps))
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,

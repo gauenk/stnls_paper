@@ -24,4 +24,4 @@ joblib
 pyyaml
 timm
 cityscapesscripts
-
+torchinfo
