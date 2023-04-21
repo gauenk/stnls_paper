@@ -29,13 +29,15 @@ def main():
 
     # -- get/run experiments --
     refresh = False
-    def clear_fxn(num,cfg): return False
+    def clear_fxn(num,cfg): return True
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_colanet/test.cfg",
-                     ".cache_io_exps/trte_colanet/test",reset=refresh,skip_dne=refresh)
+                     ".cache_io_exps/trte_colanet/test",
+                     reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
-                                    read=not(refresh),no_config_check=refresh)
+                                    read=False,no_config_check=False)
     print(len(exps))
+    # print(exps[0])
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
