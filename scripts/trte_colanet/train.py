@@ -34,7 +34,7 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_colanet/train.pkl",
-                                records_reload=True)
+                                records_reload=False)
     # -- view --
     if len(results) == 0: return
     print(results.head())

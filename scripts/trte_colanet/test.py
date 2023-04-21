@@ -43,7 +43,7 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_colanet/test.pkl",
-                                records_reload=True,to_records_fast=False)
+                                records_reload=False,to_records_fast=True)
 
     # -- view --
     print(len(results))
