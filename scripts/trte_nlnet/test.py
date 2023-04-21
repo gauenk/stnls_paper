@@ -48,13 +48,14 @@ def main():
                                 records_reload=False,to_records_fast=True)
 
     # -- get bench--
-    bench.print_summary(exps[-1],(1,3,3,128,128))
+    bench.print_summary(exps[304],(1,3,3,128,128))
 
     # -- view --
     print(len(results))
     if len(results) == 0: return
     results = results[results['input_proj_depth'] == 1].reset_index(drop=True)
     results = results[results['read_flows'] == True].reset_index(drop=True)
+    results = results[results['embed_dim'] == 12].reset_index(drop=True)
     results = results.rename(columns={"gradient_clip_val":"gcv"})
     afields = ['psnrs','ssims','strred']
     gfields = ["sigma","gcv",'label0','dname','embed_dim','ws','pretrained_path']
@@ -84,6 +85,12 @@ def main():
 
     results0 = results[results['sigma'] == 50]
     results0 = results0[results0['label0'] == "(300,50)"]
+    print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
+
+    results0 = results[results['sigma'].isin([30,50])]
+    results0 = results0[results0['label0'].isin(["(300,30)","(300,50)"])]
+    results0 = results0[results0['gcv'] == 0.5]
+    results0 = results0[results0['ws'] == 9]
     print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
 
 
