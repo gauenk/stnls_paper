@@ -75,6 +75,7 @@ def main():
     key = 'psnrs'
     # key = 'ssims'
     gfields = ["search_input","dist_crit","ps","stride0","ws","wt",'nepochs',"sigma","gcv","k"]
+    # gfields = ["search_input","crit_name","ps","stride0","ws","wt","sigma","k","nb2nb_lambda1","nb2nb_lambda2","nb2nb_epoch_ratio"]
     for group0,gdf0 in summary.groupby("crit_name"):
         print(group0)
         for group,gdf in gdf0.groupby(gfields):

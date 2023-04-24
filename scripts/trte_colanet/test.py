@@ -35,7 +35,7 @@ def main():
                      ".cache_io_exps/trte_colanet/test",
                      reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
-                                    read=False,no_config_check=False)
+                                    read=False,no_config_check=refresh)
     print(len(exps))
     # print(exps[0])
 
@@ -59,10 +59,13 @@ def main():
     results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     results = results.reset_index()[gfields + afields]
     results = results.sort_values(["dname","sigma","read_flows"])
-    results0 = results[results['k_s'] == 10].reset_index(drop=True)
+    print(len(results))
+    # print(results['k_s'])
+    # results0 = results[results['k_s'] == 10].reset_index(drop=True)
+    results0 = results
     sort_fields = ['sigma','dname','wt','read_flows','rbwd','gcv']
     print(results0.sort_values(sort_fields))
-    results1 = results[results['k_s'] == 25].reset_index(drop=True)
+    results1 = results[results['k_s'] == 30].reset_index(drop=True)
     print(results1.sort_values(sort_fields))
     # results = results.sort_values(["vid_name","dname","sigma","read_flows"])
     # results.to_csv("formatted_test_colanet.csv",index=False)
