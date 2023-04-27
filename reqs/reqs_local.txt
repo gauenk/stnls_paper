@@ -10,4 +10,5 @@
 -e ../stnls
 -e ../detectron2
 -e ../nlnet
+-e ../vrt
 -e .
