@@ -34,6 +34,7 @@ def main():
     exps,uuids = cache_io.train_stages.run("exps/trte_f2f/train.cfg",
                                            ".cache_io_exps/trte_f2f/train/",
                                            update=True)
+    print(exps[0])
     print(len(exps))
     def clear_fxn(num,cfg): return True
     results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=False,
@@ -41,7 +42,7 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_f2f/train.pkl",
-                                records_reload=False)
+                                records_reload=False,use_wandb=False)
     # -- view --
     print(len(results))
     if len(results) == 0: return
