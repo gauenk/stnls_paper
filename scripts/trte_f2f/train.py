@@ -42,7 +42,8 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_f2f/train.pkl",
-                                records_reload=False,use_wandb=False)
+                                records_reload=False,use_wandb=True,
+                                proj_name="neurips_f2f")
     # -- view --
     print(len(results))
     if len(results) == 0: return

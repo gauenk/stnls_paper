@@ -12,7 +12,8 @@ import numpy as np
 import pandas as pd
 
 # -- testing --
-from dev_basics.trte import test
+# from dev_basics.trte import test
+from frame2frame import test
 
 # -- caching results --
 import cache_io
@@ -42,7 +43,7 @@ def main():
                                 clear=False,enable_dispatch="slurm",
                                 clear_fxn=clear_fxn,
                                 records_fn=".cache_io_pkl/trte_f2f/test.pkl",
-                                records_reload=True,to_records_fast=False,
+                                records_reload=refresh,to_records_fast=False,
                                 use_wandb=False)
 
     # -- misc --
@@ -75,6 +76,7 @@ def main():
     results = results.sort_values("nepochs")
     print(len(results))
     agg_fxn = lambda x: np.mean(np.stack(x))
+    for f in afields: results[f] = results[f].apply(np.mean)
     summary = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     summary = summary.reset_index()[gfields + afields]
     # summary = summary[summary['nepochs'] == 30]

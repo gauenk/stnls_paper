@@ -45,11 +45,7 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_colanet/test.pkl",
-<<<<<<< HEAD
                                 records_reload=False,to_records_fast=False)
-=======
-                                records_reload=False,to_records_fast=True)
->>>>>>> efedfda0fe8089dc1eee98034e7ca612455d3908
 
     # -- view --
     print(len(results))
@@ -57,11 +53,8 @@ def main():
     results = results[results['sigma'] != 15].reset_index(drop=True)
     results = results.rename(columns={"gradient_clip_val":"gcv"})
     afields = ['psnrs','ssims','strred']
-<<<<<<< HEAD
-    gfields = ["sigma","gradient_clip_val",'read_flows','wt','rbwd','dname']
-=======
+    # gfields = ["sigma","gradient_clip_val",'read_flows','wt','rbwd','dname']
     gfields = ["sigma",'dname','wt','read_flows','rbwd','gcv','k_s']
->>>>>>> efedfda0fe8089dc1eee98034e7ca612455d3908
     agg_fxn = lambda x: np.mean(np.stack(x))
     for f in afields: results[f] = results[f].apply(np.mean)
     results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
