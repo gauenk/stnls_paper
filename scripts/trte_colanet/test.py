@@ -35,7 +35,7 @@ def main():
                      ".cache_io_exps/trte_colanet/test",
                      reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
-                                    read=False,no_config_check=refresh)
+                                    read=True,no_config_check=refresh,force_read=True)
     print(len(exps))
     # print(exps[0])
 
@@ -50,8 +50,10 @@ def main():
     # -- view --
     print(len(results))
     if len(results) == 0: return
+    results = results[results['rbwd'] != False].reset_index(drop=True)
     results = results[results['sigma'] != 15].reset_index(drop=True)
     results = results.rename(columns={"gradient_clip_val":"gcv"})
+    results = results[results['gcv'] != 0].reset_index(drop=True)
     afields = ['psnrs','ssims','strred']
     # gfields = ["sigma","gradient_clip_val",'read_flows','wt','rbwd','dname']
     gfields = ["sigma",'dname','wt','read_flows','rbwd','gcv','k_s']
@@ -63,15 +65,29 @@ def main():
     print(len(results))
     # print(results['k_s'])
     # results0 = results[results['k_s'] == 10].reset_index(drop=True)
-    results0 = results
+
     sort_fields = ['sigma','dname','wt','read_flows','rbwd','gcv']
-    print(results0.sort_values(sort_fields))
-    results1 = results[results['k_s'] == 30].reset_index(drop=True)
-    print(results1.sort_values(sort_fields))
+    dnames = results['dname'].unique()
+    for dname in dnames:
+        results_d = results[results['dname'] == dname].reset_index(drop=True)
+        results0 = results_d
+        print(results0.sort_values(sort_fields))
+        # results1 = results_d[results_d['k_s'] == 30].reset_index(drop=True)
+        # print(results1.sort_values(sort_fields))
     # results = results.sort_values(["vid_name","dname","sigma","read_flows"])
     # results.to_csv("formatted_test_colanet.csv",index=False)
     # print(len(results))
     # print(results)
+
+    # -- format results --
+    df_set8 = results[results['dname'] == "set8"]
+    report = reports.deno_table_v3.run_latex(df_set8)
+    print(report)
+
+    df_davis = results[results['dname'] == "davis"]
+    report = reports.deno_table_v3.run_latex(df_davis)
+    print(report)
+
 
 if __name__ == "__main__":
     main()

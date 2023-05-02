@@ -141,3 +141,5 @@ def run_latex(records,fields,fields_summ,res_fields,res_fmt):
         final_report += line[4:] + "\n"
     return final_report
 
+
+
