@@ -12,7 +12,8 @@ import numpy as np
 import pandas as pd
 
 # -- testing --
-from dev_basics.trte import test
+# from dev_basics.trte import test
+from frame2frame import test
 
 # -- caching results --
 import cache_io
@@ -42,7 +43,8 @@ def main():
                                 clear=False,enable_dispatch="slurm",
                                 clear_fxn=clear_fxn,
                                 records_fn=".cache_io_pkl/trte_f2f/test.pkl",
-                                records_reload=False,to_records_fast=False)
+                                records_reload=refresh,to_records_fast=False,
+                                use_wandb=False)
 
     # -- misc --
     # import pickle
@@ -59,23 +61,37 @@ def main():
     afields = ['psnrs','ssims','strred']
     # gfields = ["search_input","crit_name","dist_crit","stride0",
     #            "ps","k","ws","wt","gcv","dset_tr","sigma",'nepochs']
-    gfields = ["dist_crit","k","ws","ps","nepochs","ps_dists","stride0"]
+    # gfields = ["dist_crit","k","ws","ps","nepochs","ps_dists","stride0",
+    #            "iphone_type"]
+    # gfields = ["crit_name","nepochs","iphone_type"]
+    gfields = ["crit_name","nepochs","dname"]
+    optional = ["iphone_type","stnls_center_crop"]
+    for opt in optional:
+        if opt in results.columns:
+            gfields += [opt,]
+
     print(len(results[gfields].drop_duplicates()))
     # results = results[results['vid_name'] == "sunflower"].reset_index(drop=True)
     print(results)
     results = results.sort_values("nepochs")
     print(len(results))
     agg_fxn = lambda x: np.mean(np.stack(x))
+    for f in afields: results[f] = results[f].apply(np.mean)
     summary = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     summary = summary.reset_index()[gfields + afields]
     # summary = summary[summary['nepochs'] == 30]
     print(summary)
 
     # -- split groups --
-    key = 'psnrs'
+    key = 'ssims'
     # key = 'ssims'
-    gfields = ["search_input","dist_crit","ps","stride0","ws","wt",'nepochs',"sigma","gcv","k"]
-    # gfields = ["search_input","crit_name","ps","stride0","ws","wt","sigma","k","nb2nb_lambda1","nb2nb_lambda2","nb2nb_epoch_ratio"]
+    gfields = ["crit_name","nepochs",]
+    optional = ["iphone_type","stnls_center_crop"]
+    for opt in optional:
+        if opt in results.columns:
+            gfields += [opt,]
+
+    # gfields = ["crit_name","nepochs"]
     for group0,gdf0 in summary.groupby("crit_name"):
         print(group0)
         for group,gdf in gdf0.groupby(gfields):
