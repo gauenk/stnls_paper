@@ -27,14 +27,15 @@ def main():
     # -- records --
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_sr/train.cfg",
-                                           ".cache_io/trte_sr/train/",update=True)
+                                           ".cache_io/trte_sr/train/")
     print("Num Exps: ",len(exps))
     results = cache_io.run_exps(exps,train.run,uuids=uuids,
                                 name=".cache_io/trte_sr/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_sr/train.pkl",
-                                records_reload=False)
+                                records_reload=False,use_wandb=True,
+                                proj_name="neurips_sr")
     # -- view --
     if len(results) == 0: return
     print(results.head())
