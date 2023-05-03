@@ -6,6 +6,7 @@ dispatch/*
 .tmp
 .cache_io
 output
+wandb/*
 build/*
 cmake/*
 data/*

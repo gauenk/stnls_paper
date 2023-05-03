@@ -12,3 +12,4 @@ def init_search(cfg,mod_name,search_name):
     search_cfg.name = search_name
     search_fxn = module.get_search(search_cfg)
     return search_fxn
+

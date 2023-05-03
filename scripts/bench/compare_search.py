@@ -9,8 +9,9 @@ Comparing the search
 import os
 
 # -- experiment --
-from icml23.search import compare
-from icml23 import plots
+# from stnls_paper.search import compare
+from stnls_paper.search import compare_module
+from stnls_paper import plots
 
 # -- caching results --
 import cache_io
@@ -26,10 +27,9 @@ def main():
     # -- get/run experiments --
     clear_fxn = lambda x,y: False
     results = cache_io.run_exps("exps/bench/compare_search.cfg",
-                                compare.run,
+                                compare_module.run,
                                 name=".cache_io/bench/compare_search",
-                                version="v1",
-                                skip_loop=False,
+                                version="v1",skip_loop=False,
                                 clear_fxn=clear_fxn,
                                 records_fn=".cache_io_pkl/bench/compare_search.pkl",
                                 records_reload=True)
