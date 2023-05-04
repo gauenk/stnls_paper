@@ -28,13 +28,15 @@ def main():
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_colanet/train.cfg",
                                            ".cache_io/trte_colanet/train/")
+    # print(uuids)
     print("Num Exps: ",len(exps))
-    results = cache_io.run_exps(exps,train.run,uuids=uuids,
+    results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
                                 name=".cache_io/trte_colanet/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_colanet/train.pkl",
-                                records_reload=False)
+                                records_reload=False,
+                                use_wandb=True,proj_name="neurips_colanet")
     # -- view --
     if len(results) == 0: return
     print(results.head())

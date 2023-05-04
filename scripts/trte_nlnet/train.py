@@ -34,6 +34,7 @@ def main():
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet/train.cfg",
                                            ".cache_io/trte_nlnet/train/",
                                            read_filter=read_filter)
+    print(uuids)
 
     # -- view --
     # bench.print_summary(exps,(1,3,3,128,128))
@@ -59,7 +60,8 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_nlnet/train.pkl",
-                                records_reload=False,use_wandb=False)
+                                records_reload=False,use_wandb=True,
+                                proj_name="nlnet_tr")
 
 
 

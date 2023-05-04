@@ -48,7 +48,7 @@ def main():
                                 records_reload=False,to_records_fast=True)
 
     # -- get bench--
-    bench.print_summary(exps[304],(1,3,3,128,128))
+    # bench.print_summary(exps[304],(1,3,3,128,128))
 
     # -- view --
     print(len(results))
