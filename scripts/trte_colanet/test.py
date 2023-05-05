@@ -29,15 +29,16 @@ def main():
 
     # -- get/run experiments --
     refresh = False
-    def clear_fxn(num,cfg): return True
+    def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_colanet/test.cfg",
                      ".cache_io_exps/trte_colanet/test",
                      reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
-                                    read=True,no_config_check=refresh,force_read=True)
+                                    read=False,no_config_check=False)
     print(len(exps))
     # print(exps[0])
+    print(uuids[:5])
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
@@ -45,15 +46,19 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_colanet/test.pkl",
-                                records_reload=False,to_records_fast=False)
+                                records_reload=False,to_records_fast=False,
+                                use_wandb=True,proj_name="neurips_test_colanet")
 
     # -- view --
-    print(len(results))
+    print("num results: ",len(results))
     if len(results) == 0: return
     results = results[results['rbwd'] != False].reset_index(drop=True)
-    results = results[results['sigma'] != 15].reset_index(drop=True)
+    # results = results[results['sigma'] != 15].reset_index(drop=True)
     results = results.rename(columns={"gradient_clip_val":"gcv"})
     results = results[results['gcv'] != 0].reset_index(drop=True)
+    print(len(results[results['dname'] == "davis"]),
+          len(results[results['dname'] == "set8"]))
+
     afields = ['psnrs','ssims','strred']
     # gfields = ["sigma","gradient_clip_val",'read_flows','wt','rbwd','dname']
     gfields = ["sigma",'dname','wt','read_flows','rbwd','gcv','k_s']
@@ -71,6 +76,7 @@ def main():
     for dname in dnames:
         results_d = results[results['dname'] == dname].reset_index(drop=True)
         results0 = results_d
+        print(dname,len(results0))
         print(results0.sort_values(sort_fields))
         # results1 = results_d[results_d['k_s'] == 30].reset_index(drop=True)
         # print(results1.sort_values(sort_fields))
