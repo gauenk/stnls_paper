@@ -43,8 +43,8 @@ def main():
                                 clear=False,enable_dispatch="slurm",
                                 clear_fxn=clear_fxn,
                                 records_fn=".cache_io_pkl/trte_f2f/test.pkl",
-                                records_reload=refresh,to_records_fast=False,
-                                use_wandb=False)
+                                records_reload=False,to_records_fast=False,
+                                use_wandb=True,proj_name="neurips_test_f2f")
 
     # -- misc --
     # import pickle
@@ -65,12 +65,12 @@ def main():
     #            "iphone_type"]
     # gfields = ["crit_name","nepochs","iphone_type"]
     gfields = ["crit_name","nepochs","dname"]
-    optional = ["iphone_type","stnls_center_crop"]
+    optional = ["iphone_type","stnls_center_crop","label0"]
     for opt in optional:
         if opt in results.columns:
             gfields += [opt,]
-
-    print(len(results[gfields].drop_duplicates()))
+    print(gfields)
+    print(len(results),len(results[gfields].drop_duplicates()))
     # results = results[results['vid_name'] == "sunflower"].reset_index(drop=True)
     print(results)
     results = results.sort_values("nepochs")
@@ -92,7 +92,7 @@ def main():
             gfields += [opt,]
 
     # gfields = ["crit_name","nepochs"]
-    for group0,gdf0 in summary.groupby("crit_name"):
+    for group0,gdf0 in summary.groupby("label0"):
         print(group0)
         for group,gdf in gdf0.groupby(gfields):
             print(gdf[key].to_numpy()," : ",group)
