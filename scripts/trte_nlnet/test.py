@@ -36,7 +36,7 @@ def main():
     exps = read_test("exps/trte_nlnet/test.cfg",
                      ".cache_io_exps/trte_nlnet/test",reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_nlnet/test",
-                                    reset=refresh,no_config_check=refresh)
+                                    reset=False,no_config_check=refresh)
     print("len(exps): ",len(exps))
 
     # -- run exps --
@@ -48,7 +48,7 @@ def main():
                                 records_reload=False,to_records_fast=True)
 
     # -- get bench--
-    bench.print_summary(exps[304],(1,3,3,128,128))
+    # bench.print_summary(exps[304],(1,3,3,128,128))
 
     # -- view --
     print(len(results))

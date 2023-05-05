@@ -27,9 +27,10 @@ def main():
     # -- records --
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_sr/train.cfg",
-                                           ".cache_io/trte_sr/train/")
+                                           ".cache_io_exps/trte_sr/train/")
+                                           # update=True)
     print("Num Exps: ",len(exps))
-    results = cache_io.run_exps(exps,train.run,uuids=uuids,
+    results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
                                 name=".cache_io/trte_sr/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
