@@ -7,13 +7,22 @@ def main():
 
     R = 3 # number of times to check
     cfg = edict()
-    cfg.dname = "davis_cropped"
-    cfg.nsamples_tr = 100
-    cfg.nframes = 5
+    cfg.dname = "iphone_s2023"
+    cfg.iphone_type = "structures"
+    # cfg.iphone_type = "texture"
+    cfg.video_seq_max = 120
+    # cfg.dname = "davis_cropped"
+    cfg.nsamples_tr = 0#100
+    cfg.nframes = 0
     cfg.sigma = 30
     data,loaders = data_hub.sets.load(cfg)
-    loader = loaders['tr']
-    L = len(loader)
+    keys = data.tr.paths['images'].keys()
+    print(sum([len(data.tr.paths['images'][k]) for k in keys]))
+    # print([len(data['tr'][i]['noisy']) for i in range(len(data['tr']))])
+    # loader = loaders['tr']
+    # L = len(loader)
+    # print("L: ",L)
+    return
 
     # -- gather indices --
     indices = th.zeros((R,L)).int()
