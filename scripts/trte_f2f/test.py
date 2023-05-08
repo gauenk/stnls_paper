@@ -37,7 +37,7 @@ def main():
     print("Run Exps: ",len(exps))
 
     # -- run exps --
-    results = cache_io.run_exps(exps,test.run,#uuids=uuids,
+    results = cache_io.run_exps(exps,test.run,uuids=uuids,
                                 name=".cache_io/trte_f2f/test",
                                 version="v1",skip_loop=False,
                                 clear=False,enable_dispatch="slurm",
@@ -58,14 +58,15 @@ def main():
     results = results.rename(columns={"gradient_clip_val":"gcv"})
     print(len(results))
     if len(results) == 0: return
-    afields = ['psnrs','ssims','strred']
+    afields = ['psnrs','ssims','strred','psnrs_pp','ssims_pp','strred_pp']
     # gfields = ["search_input","crit_name","dist_crit","stride0",
     #            "ps","k","ws","wt","gcv","dset_tr","sigma",'nepochs']
     # gfields = ["dist_crit","k","ws","ps","nepochs","ps_dists","stride0",
     #            "iphone_type"]
     # gfields = ["crit_name","nepochs","iphone_type"]
     gfields = ["crit_name","nepochs","dname"]
-    optional = ["iphone_type","stnls_center_crop","label0"]
+    # optional = ["iphone_type","stnls_center_crop","label0"]
+    optional = ["stnls_center_crop","label0"]
     for opt in optional:
         if opt in results.columns:
             gfields += [opt,]
@@ -83,10 +84,11 @@ def main():
     print(summary)
 
     # -- split groups --
-    key = 'ssims'
+    key = ['psnrs','ssims','strred','psnrs_pp','ssims_pp','strred_pp']
     # key = 'ssims'
     gfields = ["crit_name","nepochs",]
-    optional = ["iphone_type","stnls_center_crop"]
+    optional = ["stnls_center_crop"]
+    # optional = ["iphone_type","stnls_center_crop"]
     for opt in optional:
         if opt in results.columns:
             gfields += [opt,]
