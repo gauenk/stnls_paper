@@ -1,9 +1,10 @@
+import math
 import numpy as np
 import torch as th
 import torch.nn as nn
 from pathlib import Path
 from matplotlib import pyplot as plt
-from linear_warmup_cosine_annealing_warm_restarts_weight_decay import ChainedScheduler
+# from linear_warmup_cosine_annealing_warm_restarts_weight_decay import ChainedScheduler
 
 class NullModule(nn.Module):
     def __init__(self):
@@ -22,17 +23,20 @@ def collect_lrs(optim,scheduler,nsteps):
 def main():
 
     model = NullModule()
-    lr = 5e-6
+    lr = 3e-4
     optimizer = th.optim.Adam(model.parameters(),lr=lr,weight_decay=1e-6)
     # ChainedScheduler = th.optim.lr_scheduler.ChainedScheduler
     SequentialLR = th.optim.lr_scheduler.SequentialLR
+    CosineAnnealingLR = th.optim.lr_scheduler.CosineAnnealingLR
     ExponentialLR = th.optim.lr_scheduler.ExponentialLR
     CosineAnnealingWarmRestarts = th.optim.lr_scheduler.CosineAnnealingWarmRestarts
 
     T_0 = 200
     T_mult = 2
+    lr_final = 1e-6
     eta_min = 1e-8
     gamma = 0.9
+    nsteps = 100
     print(optimizer)
 
     # scheduler0 = ExponentialLR(optimizer, gamma=gamma)
@@ -42,14 +46,18 @@ def main():
     # scheduler = ChainedScheduler([scheduler1,scheduler0],warmup_steps=10)
     # scheduler = scheduler1
 
-    scheduler = ChainedScheduler(
-        optimizer,
-        T_0 = T_0,
-        T_mul = T_mult,
-        eta_min = eta_min,
-        gamma = gamma,
-        max_lr = 1.0,
-        warmup_steps= 100)
+    # scheduler = ChainedScheduler(
+    #     optimizer,
+    #     T_0 = T_0,
+    #     T_mul = T_mult,
+    #     eta_min = eta_min,
+    #     gamma = gamma,
+    #     max_lr = 1.0,
+    #     warmup_steps= 100)
+    scheduler = CosineAnnealingLR(optimizer,100)
+    # gamma = math.exp(math.log(lr_final/lr)/nsteps)
+    # print(gamma)
+    # scheduler = ExponentialLR(optimizer,gamma=gamma)
 
     print(scheduler)
 
@@ -63,7 +71,6 @@ def main():
     #       scheduler.T_mult,scheduler._step_count,scheduler.eta_min,
     #       scheduler.get_lr())
     print(scheduler.get_lr())
-    nsteps = 1000
     lrs = collect_lrs(optimizer,scheduler,nsteps)
     print(len(lrs))
     plt.plot(lrs)
