@@ -29,6 +29,10 @@ def main():
     exps,uuids = cache_io.train_stages.run("exps/trte_colanet/train.cfg",
                                            ".cache_io/trte_colanet/train/")
                                            # update=True)
+    # for i,(uuid,exp) in enumerate(zip(uuids,exps)):
+    #     print(i,uuid)
+    #     print(exp)
+
     # print(uuids)
     print("Num Exps: ",len(exps))
     results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
