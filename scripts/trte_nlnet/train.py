@@ -33,7 +33,7 @@ def main():
     # read_filter = None
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet/train.cfg",
                                            ".cache_io/trte_nlnet/train/",
-                                           read_filter=read_filter)
+                                           read_filter=read_filter,update=True)
     print(uuids)
 
     # -- view --

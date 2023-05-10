@@ -1,3 +1,4 @@
+from . import bench
 from . import intro_fig
 from . import noisy_flow
 from . import race_cond_v2
