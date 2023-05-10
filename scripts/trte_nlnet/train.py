@@ -27,9 +27,9 @@ def main():
 
     # -- get experiments --
     def clear_fxn(num,cfg): return False
-    read_filter = {"read_flows":True,"num_res":10,"nres_per_block":10,
-                   "nepochs":300,"input_proj_depth":[1,3],
-                   "save_epoch_list":"1-50-100-150-200-250"}
+    # read_filter = {"read_flows":True,"num_res":10,"nres_per_block":10,
+    #                "nepochs":300,"input_proj_depth":[1],
+    #                "save_epoch_list":"1-50-100-150-200-250"}
     # read_filter = None
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet/train.cfg",
                                            ".cache_io/trte_nlnet/train/",
