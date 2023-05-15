@@ -35,10 +35,9 @@ def main():
                      ".cache_io_exps/trte_colanet/test",
                      reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
-                                    read=False,no_config_check=False)
-    print(len(exps))
+                                    read=True,no_config_check=False)
     # print(exps[0])
-    print(uuids[:5])
+
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
