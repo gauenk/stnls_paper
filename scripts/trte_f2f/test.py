@@ -34,6 +34,7 @@ def main():
                      ".cache_io_exps/trte_f2f/test",reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_f2f/test",
                                     read=not(refresh),no_config_check=False)
+    print(uuids)
     print("Run Exps: ",len(exps))
 
     # -- run exps --
