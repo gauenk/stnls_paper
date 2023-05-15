@@ -64,6 +64,8 @@ def main():
     gfields = ["sigma",'dname','wt','read_flows','rbwd','gcv','k_s']
     agg_fxn = lambda x: np.mean(np.stack(x))
     for f in afields: results[f] = results[f].apply(np.mean)
+    print(results[['psnrs','ssims','vid_name']])
+
     results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     results = results.reset_index()[gfields + afields]
     results = results.sort_values(["dname","sigma","read_flows"])

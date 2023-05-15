@@ -8,8 +8,8 @@ import os
 import numpy as np
 
 import cache_io
-from icml23 import race_cond
-from icml23 import plots
+from stnls_paper import race_cond
+# from stnls_paper import plots
 
 def main():
 
@@ -19,12 +19,20 @@ def main():
     print("PID: ",pid)
 
     # -- get/run cached records --
-    exps = cache_io.get_exp_list("exps/race_cond.cfg")
+    exps = cache_io.get_exp_list("exps/race_cond/race_cond.cfg")
+    print(len(exps))
     records = cache_io.run_exps(exps,race_cond.run_exp,
                                 name=".cache_io/race_cond",
-                                version="v1",skip_loop=True,
+                                version="v1",skip_loop=False,
                                 records_fn=".cache_io_pkl/race_cond_agg.pkl",
-                                records_reload=False)
+                                records_reload=True,use_wandb=False,
+                                clear=True)
+
+    # -- viz --
+    print(records[['errors_m_0','errors_m_1','dtime','exact_time','nchnls']])
+    # print(records)
+    print("done.")
+    return
     # -- plot --
     plots.race_cond.run(records)
 

@@ -47,15 +47,20 @@ from stnls.utils.inds import get_nums_hw
 # from matplotlib import pyplot as plt
 SAVE_DIR = Path("./output/race_cond/")
 
-def compute_grad(search,noisy,ntotal,dists_grad):
+def compute_grad(search,noisy,dists_grad):
 
     # -- copy noisy --
-    noisy_g = noisy.clone()
-    noisy_g.requires_grad_(True)
+    noisy0 = noisy.clone()
+    noisy1 = noisy.clone()
+    noisy0.requires_grad_(True)
+    noisy1.requires_grad_(True)
 
     # -- run forward --
-    dists,inds = search(noisy_g[None,:],0,ntotal)
-    dists,inds = dists[0],inds[0]
+    T,F,H,W = noisy.shape
+    fflow = th.zeros((1,T,2,H,W),device="cuda:0",dtype=th.float)
+    bflow = th.zeros((1,T,2,H,W),device="cuda:0",dtype=th.float)
+    dists,inds = search(noisy0[None,:],noisy1[None,:],fflow,bflow)
+    dists,inds = dists[0,0],inds[0]
     th.cuda.synchronize()
 
     # -- start timer --
@@ -70,7 +75,7 @@ def compute_grad(search,noisy,ntotal,dists_grad):
     timer.stop("bwd")
     dtime = timer["bwd"]
 
-    return noisy_g.grad,dtime
+    return noisy0.grad,noisy1.grad,dtime
 
 def expand_chnls(noisy,nchnls):
     nreps = int((nchnls-1)/noisy.shape[1]+1)
@@ -82,18 +87,23 @@ def expand_chnls(noisy,nchnls):
 def compute_exact_grad(search,noisy,ntotal,dists_grad,use_simp=False):
 
     # -- copy noisy --
-    noisy_g = noisy.clone()
+    # noisy_g = noisy.clone()
+    noisy0 = noisy.clone()
+    noisy1 = noisy.clone()
     if not use_simp:
-        noisy_g.requires_grad_(True)
+        noisy0.requires_grad_(True)
+        noisy1.requires_grad_(True)
 
     # -- run forward --
     th.cuda.synchronize()
-    dists,inds = search(noisy_g[None,:],0,ntotal)
-    dists,inds = dists[0],inds[0]
+    T,F,H,W = noisy.shape
+    fflow = th.zeros((1,T,2,H,W),device="cuda:0",dtype=th.float)
+    bflow = th.zeros((1,T,2,H,W),device="cuda:0",dtype=th.float)
+    dists,inds = search(noisy0[None,:],noisy1[None,:],fflow,bflow)
+    dists,inds = dists[0,0],inds[0,0]
     th.cuda.synchronize()
 
     # -- unpack vars --
-    vid0,vid1 = noisy_g,noisy_g
     stride0 = search.stride0
     ps,pt = search.ps,search.pt
     dil = search.dilation
@@ -107,19 +117,19 @@ def compute_exact_grad(search,noisy,ntotal,dists_grad,use_simp=False):
     # -- exec --
     if use_simp:
         run_bwd = stnls.simple.search_bwd.run
-        grad0,grad1 = run_bwd(dists_grad,vid0,vid1,inds,0,stride0,
+        grad0,grad1 = run_bwd(dists_grad,noisy0,noisy1,inds,0,stride0,
                               ps,pt,dil,use_adj,reflect_bounds)
-        grad = grad0+grad1
     else:
         th.autograd.backward(dists,dists_grad)
-        grad = noisy_g.grad
+        grad0 = noisy0.grad
+        grad1 = noisy1.grad
 
     # -- stop timer --
     th.cuda.synchronize()
     timer.stop("bwd")
     dtime = timer["bwd"]
 
-    return grad,dtime
+    return grad0,grad1,dtime
 
 def set_seed(seed):
     random.seed(seed)
@@ -164,15 +174,27 @@ def run_exp(cfg):
     noisy /= 255.
 
     # -- init search --
-    esearch = stnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
-                               cfg.pt,cfg.ws,cfg.wt,-1,dil,stride0=cfg.stride0,
-                               stride1=cfg.stride1,nbwd=1,use_adj=use_adj,
-                               rbwd=False,exact=True)
-    search = stnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
-                              cfg.pt,cfg.ws,cfg.wt,-1,dil,stride0=cfg.stride0,
-                              stride1=cfg.stride1,nbwd=cfg.nbwd,use_adj=use_adj,
-                              rbwd=rbwd,exact=exact,nbwd_mode=nbwd_mode,
-                              ngroups=cfg.ngroups,npt=cfg.neigh_pt,qpt=cfg.query_pt)
+    _cfg = dcopy(cfg)
+    _cfg.exact = True
+    _cfg.use_adj = False
+    _cfg.dist_type = "l2"
+    esearch = stnls.search.init(_cfg)
+    _cfg.exact = False
+    _cfg.dist_type = "l2"
+    _cfg.use_adj = False
+    _cfg.queries_per_thread = cfg.query_pt
+    _cfg.neigh_per_thread = cfg.neigh_pt
+    _cfg.channel_groups = cfg.ngroups
+    search = stnls.search.init(_cfg)
+    # esearch = stnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
+    #                            cfg.pt,cfg.ws,cfg.wt,-1,dil,stride0=cfg.stride0,
+    #                            stride1=cfg.stride1,nbwd=1,use_adj=use_adj,
+    #                            rbwd=False,exact=True)
+    # search = stnls.search.init("l2_with_index",None,None,cfg.k,cfg.ps,
+    #                           cfg.pt,cfg.ws,cfg.wt,-1,dil,stride0=cfg.stride0,
+    #                           stride1=cfg.stride1,nbwd=cfg.nbwd,use_adj=use_adj,
+    #                           rbwd=rbwd,exact=exact,nbwd_mode=nbwd_mode,
+    #                           ngroups=cfg.ngroups,npt=cfg.neigh_pt,qpt=cfg.query_pt)
 
     # -- batching info --
     t,c,h,w = noisy.shape
@@ -182,38 +204,55 @@ def run_exp(cfg):
 
 
     # -- forward and backward --
-    emap = th.zeros_like(noisy)
-    psnrs,errors = [],[]
+    emap0,emap1 = th.zeros_like(noisy),th.zeros_like(noisy)
+    emaps = [emap0,emap1]
+    psnrs = [[],[]]
+    errors = [[],[]]
     etime,dtime = 0,0
     for r in range(cfg.nreps):
 
         # -- new grad --
-        grad = th.rand((ntotal,cfg.k),device=device)
+        # grad = th.rand((ntotal,cfg.k),device=device)
+        grad = th.ones((ntotal,cfg.k),device=device)
 
         # -- compute exact grad --
-        exact_grad,etime_i = compute_exact_grad(esearch,noisy,ntotal,grad,use_simp)
-        print(etime_i)
+        egrad0,egrad1,etime_i = compute_exact_grad(esearch,noisy,ntotal,grad,use_simp)
+        print("-"*3)
+        print("etime: ",etime_i)
+        print(egrad0[0,0,:10,:10])
 
         # -- compute proposed grad --
-        vid_grad,dtime_i = compute_grad(search,noisy,ntotal,grad)
-        print(dtime_i)
+        grad0,grad1,dtime_i = compute_grad(search,noisy,grad)
+        print(grad0.shape)
+        print(grad0[0,0,:10,:10])
+        print("dtime: ",dtime_i)
 
-        # -- compute error --
-        error = th.abs(vid_grad - exact_grad)/(exact_grad.abs() + 1e-5)
-        emap += error/cfg.nreps
-        error_m = th.mean(error).item()
-        errors.append(error_m)
+        # -- 2nd time --
+        rgrad0,rgrad1,dtime_i2 = compute_grad(search,noisy,grad)
+        print(rgrad0[0,0,:10,:10])
+        print("diff: ",th.mean((rgrad0 - grad0)**2).item())
 
-        # -- compute psnrs --
-        imax = exact_grad.max()
-        diff2 = (vid_grad/imax - exact_grad/imax)**2
-        psnrs_i = -10 * th.log10(diff2.mean((1,2,3))).cpu().numpy()
-        psnrs.append(psnrs_i)
-        print("[%d] error_m: %2.6f" % (r,error_m))
+        # -- each grad --
+        grads = [grad0,grad1]
+        egrads = [egrad0,egrad1]
+        for i in range(2):
+            # -- compute error --
+            error = th.abs(grads[i] - egrads[i])/(egrads[i].abs() + 1e-5)
+            emaps[i] += error/cfg.nreps
+            error_m = th.mean(error).item()
+            errors[i].append(error_m)
+    
+            # -- compute psnrs --
+            imax = egrads[i].max()
+            diff2 = (grads[i]/imax - egrads[i]/imax)**2
+            psnrs_i = -10 * th.log10(diff2.mean((1,2,3))).cpu().numpy()
+            psnrs[i].append(psnrs_i)
+            print("[%d] error_m: %2.6f" % (r,error_m))
 
         # -- save first example --
         if r == 0:
-            c = exact_grad.shape[1]
+            c = egrad0.shape[1]
+            diff2 = (grads[0]/imax - egrads[0]/imax)**2
             diff2 /= diff2.max().item()
             # print(error.mean().item())
             # print(error.max().item())
@@ -231,15 +270,16 @@ def run_exp(cfg):
     # -- save error map --
     # print(emap.max().item())
     # emap /= emap.max().item()
-    for ci in range(c):
-        print(ci,emap[:,ci].max().item())
-        fn = "emap_nodiv_%s_%d" % (cfg.uuid,ci)
-        stnls.testing.data.save_burst(emap[:,[ci]],SAVE_DIR,fn)
-
-    emap /= emap.max().item()
-    for ci in range(c):
-        fn = "emap_%s_%d" % (cfg.uuid,ci)
-        stnls.testing.data.save_burst(emap[:,[ci]],SAVE_DIR,fn)
+    for i in range(2):
+        for ci in range(c):
+            print(ci,emaps[i][:,ci].max().item())
+            fn = "emap%d_nodiv_%s_%d" % (i,cfg.uuid,ci)
+            stnls.testing.data.save_burst(emaps[i][:,[ci]],SAVE_DIR,fn)
+    
+        emaps[i] /= emaps[i].max().item()
+        for ci in range(c):
+            fn = "emap%d_%s_%d" % (i,cfg.uuid,ci)
+            stnls.testing.data.save_burst(emaps[i][:,[ci]],SAVE_DIR,fn)
 
     # -- average times --
     dtime /= cfg.nreps
@@ -247,12 +287,13 @@ def run_exp(cfg):
 
     # -- compute error --
     results = edict()
-    results.errors = errors
-    results.emap = emap.cpu().numpy()
-    results.errors_m = np.mean(errors)
-    results.errors_s = np.std(errors)
-    results.psnrs = psnrs
-    results.psnrs_m = np.mean(psnrs)
+    for i in range(2):
+        results["errors_%d"%i] = errors[i]
+        results["emap_%d"%i] = emaps[i].cpu().numpy()
+        results["errors_m_%d"%i] = np.mean(errors[i])
+        results["errors_s_%d"%i] = np.std(errors[i])
+        results["psnrs_%d"%i] = psnrs[i]
+        results["psnrs_m_%d"%i] = np.mean(psnrs[i])
     results.dtime = dtime
     results.exact_time = etime
 
