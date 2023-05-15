@@ -27,8 +27,7 @@ def main():
     # -- records --
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_colanet/train.cfg",
-                                           ".cache_io/trte_colanet/train/",
-                                           update=True)
+                                           ".cache_io/trte_colanet/train/")#,update=True)
 
     # print(uuids)
     print("Num Exps: ",len(exps))
