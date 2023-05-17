@@ -51,10 +51,10 @@ def main():
     # -- view --
     print("num results: ",len(results))
     if len(results) == 0: return
-    results = results[results['rbwd'] != False].reset_index(drop=True)
+    # results = results[results['rbwd'] != False].reset_index(drop=True)
     # results = results[results['sigma'] != 15].reset_index(drop=True)
     results = results.rename(columns={"gradient_clip_val":"gcv"})
-    results = results[results['gcv'] != 0].reset_index(drop=True)
+    # results = results[results['gcv'] != 0].reset_index(drop=True)
     print(len(results[results['dname'] == "davis"]),
           len(results[results['dname'] == "set8"]))
 
