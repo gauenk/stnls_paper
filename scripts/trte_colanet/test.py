@@ -35,10 +35,9 @@ def main():
                      ".cache_io_exps/trte_colanet/test",
                      reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_colanet/test",
-                                    read=False,no_config_check=False)
-    print(len(exps))
+                                    read=True,no_config_check=False)
     # print(exps[0])
-    print(uuids[:5])
+
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
@@ -52,10 +51,10 @@ def main():
     # -- view --
     print("num results: ",len(results))
     if len(results) == 0: return
-    results = results[results['rbwd'] != False].reset_index(drop=True)
+    # results = results[results['rbwd'] != False].reset_index(drop=True)
     # results = results[results['sigma'] != 15].reset_index(drop=True)
     results = results.rename(columns={"gradient_clip_val":"gcv"})
-    results = results[results['gcv'] != 0].reset_index(drop=True)
+    # results = results[results['gcv'] != 0].reset_index(drop=True)
     print(len(results[results['dname'] == "davis"]),
           len(results[results['dname'] == "set8"]))
 
@@ -64,6 +63,8 @@ def main():
     gfields = ["sigma",'dname','wt','read_flows','rbwd','gcv','k_s']
     agg_fxn = lambda x: np.mean(np.stack(x))
     for f in afields: results[f] = results[f].apply(np.mean)
+    print(results[['psnrs','ssims','vid_name']])
+
     results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     results = results.reset_index()[gfields + afields]
     results = results.sort_values(["dname","sigma","read_flows"])

@@ -32,8 +32,7 @@ def main():
     #                "save_epoch_list":"1-50-100-150-200-250"}
     # read_filter = None
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet/train.cfg",
-                                           ".cache_io_exps/trte_nlnet/train/",
-                                           update=True)
+                                           ".cache_io_exps/trte_nlnet/train/")#,update=True)
     print(uuids)
 
     # -- view --

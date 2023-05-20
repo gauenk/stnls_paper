@@ -45,7 +45,7 @@ from stnls.utils.inds import get_nums_hw
 
 # -- plotting --
 # from matplotlib import pyplot as plt
-SAVE_DIR = Path("./output/race_cond/")
+SAVE_DIR = Path("./output/bench/")
 
 def compute_grad(search,noisy,dists_grad):
 
@@ -150,11 +150,7 @@ def run_exp(cfg):
 
     # -- unpack config --
     device = "cuda:0"
-    exact = cfg.exact# == "true"
-    rbwd = cfg.rbwd# == "true"
     use_simp = cfg.use_simp# == "true"
-    nbwd_mode = cfg.nbwd_mode
-    print(exact,cfg.nbwd,rbwd,use_simp,nbwd_mode)
 
     # -- unpack sample --
     region = sample['region']
@@ -175,8 +171,9 @@ def run_exp(cfg):
 
     # -- init search --
     _cfg = dcopy(cfg)
-    _cfg.exact = True
+    _cfg.exact = False
     _cfg.use_adj = False
+    _cfg.use_atomic = True
     _cfg.dist_type = "l2"
     esearch = stnls.search.init(_cfg)
     _cfg.exact = False
@@ -217,20 +214,22 @@ def run_exp(cfg):
 
         # -- compute exact grad --
         egrad0,egrad1,etime_i = compute_exact_grad(esearch,noisy,ntotal,grad,use_simp)
-        print("-"*3)
-        print("etime: ",etime_i)
-        print(egrad0[0,0,:10,:10])
+        # print("-"*3)
+        # print("etime: ",etime_i)
+        # print(egrad0[0,0,:10,:10])
 
         # -- compute proposed grad --
         grad0,grad1,dtime_i = compute_grad(search,noisy,grad)
-        print(grad0.shape)
-        print(grad0[0,0,:10,:10])
-        print("dtime: ",dtime_i)
+        # print(grad0.shape)
+        # print(grad0[0,0,:10,:10])
+        # print("dtime: ",dtime_i)
 
-        # -- 2nd time --
-        rgrad0,rgrad1,dtime_i2 = compute_grad(search,noisy,grad)
-        print(rgrad0[0,0,:10,:10])
-        print("diff: ",th.mean((rgrad0 - grad0)**2).item())
+        # # -- 2nd time --
+        # rgrad0,rgrad1,dtime_i2 = compute_grad(search,noisy,grad)
+        # # print(rgrad0[0,0,:10,:10])
+        print("etime,dtime: ",etime_i,dtime_i)
+        # print("diff0: ",th.mean((rgrad0 - grad0)**2).item())
+        # print("diff1: ",th.mean((rgrad1 - grad1)**2).item())
 
         # -- each grad --
         grads = [grad0,grad1]
@@ -261,7 +260,7 @@ def run_exp(cfg):
             for ci in range(c):
                 # print(diff2.shape,ci)
                 fn = "diff_%s_%d" % (cfg.uuid,ci)
-                stnls.testing.data.save_burst(diff2[:,[ci]],SAVE_DIR,fn)
+                # stnls.testing.data.save_burst(diff2[:,[ci]],SAVE_DIR,fn)
 
         # -- accumuate deno --
         dtime += dtime_i
@@ -274,12 +273,12 @@ def run_exp(cfg):
         for ci in range(c):
             print(ci,emaps[i][:,ci].max().item())
             fn = "emap%d_nodiv_%s_%d" % (i,cfg.uuid,ci)
-            stnls.testing.data.save_burst(emaps[i][:,[ci]],SAVE_DIR,fn)
+            # stnls.testing.data.save_burst(emaps[i][:,[ci]],SAVE_DIR,fn)
     
         emaps[i] /= emaps[i].max().item()
         for ci in range(c):
             fn = "emap%d_%s_%d" % (i,cfg.uuid,ci)
-            stnls.testing.data.save_burst(emaps[i][:,[ci]],SAVE_DIR,fn)
+            # stnls.testing.data.save_burst(emaps[i][:,[ci]],SAVE_DIR,fn)
 
     # -- average times --
     dtime /= cfg.nreps
