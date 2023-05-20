@@ -36,7 +36,7 @@ def main():
     exps = read_test("exps/trte_nlnet/test.cfg",
                      ".cache_io_exps/trte_nlnet/test",reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_nlnet/test",
-                                    reset=False,no_config_check=refresh)
+                                    no_config_check=False,update=refresh)
     print("len(exps): ",len(exps))
 
     # -- run exps --
@@ -45,7 +45,8 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_nlnet/test.pkl",
-                                records_reload=False,to_records_fast=True)
+                                records_reload=True,to_records_fast=True,
+                                use_wandb=True,proj_name="nlnet_test")
 
     # -- get bench--
     # bench.print_summary(exps[304],(1,3,3,128,128))
@@ -70,28 +71,29 @@ def main():
     results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
     results = results.reset_index()[gfields + afields]
     print(len(results))
-    results0 = results[results['sigma'] == 30]
-    results0 = results0[results0['label0'] == "(300,30)"]
-    print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
+    print(results)
+    # results0 = results[results['sigma'] == 30]
+    # results0 = results0[results0['label0'] == "(300,30)"]
+    # print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
 
-    results0 = results[results['sigma'] == 30]
-    results0 = results0[results0['label0'] == "(300,50)"]
-    print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
+    # results0 = results[results['sigma'] == 30]
+    # results0 = results0[results0['label0'] == "(300,50)"]
+    # print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
 
 
-    results0 = results[results['sigma'] == 50]
-    results0 = results0[results0['label0'] == "(300,30)"]
-    print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
+    # results0 = results[results['sigma'] == 50]
+    # results0 = results0[results0['label0'] == "(300,30)"]
+    # print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
 
-    results0 = results[results['sigma'] == 50]
-    results0 = results0[results0['label0'] == "(300,50)"]
-    print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
+    # results0 = results[results['sigma'] == 50]
+    # results0 = results0[results0['label0'] == "(300,50)"]
+    # print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
 
-    results0 = results[results['sigma'].isin([30,50])]
-    results0 = results0[results0['label0'].isin(["(300,30)","(300,50)"])]
-    results0 = results0[results0['gcv'] == 0.5]
-    results0 = results0[results0['ws'] == 9]
-    print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
+    # results0 = results[results['sigma'].isin([30,50])]
+    # results0 = results0[results0['label0'].isin(["(300,30)","(300,50)"])]
+    # results0 = results0[results0['gcv'] == 0.5]
+    # results0 = results0[results0['ws'] == 9]
+    # print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])
 
 
 if __name__ == "__main__":

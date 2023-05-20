@@ -32,7 +32,7 @@ def main():
     #                "save_epoch_list":"1-50-100-150-200-250"}
     # read_filter = None
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet/train.cfg",
-                                           ".cache_io/trte_nlnet/train/",
+                                           ".cache_io_exps/trte_nlnet/train/",
                                            update=True)
     print(uuids)
 
@@ -55,7 +55,7 @@ def main():
     print(len(exps))
     print(uuids[:5])
     print(uuids[-5:])
-    results = cache_io.run_exps(exps,train.run,uuids=uuids,
+    results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
                                 name=".cache_io/trte_nlnet/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
