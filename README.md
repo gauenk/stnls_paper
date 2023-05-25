@@ -4,7 +4,7 @@ Our system is uses Ubuntu 20.02 OS with two TITAN RTX GPUs with an Intel i7 Proc
 
 1.) To install the package, run the following commands:
 
-`./scripts/download_repos.sh` # skip this for ICML submission
+`./scripts/download_repos.sh` # skip this for paper submission
 
 `python -m pip install --upgrade pip`
 
