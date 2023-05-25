@@ -59,7 +59,7 @@ def main():
     print(results[['timer_fwd','trainable_params',"macs"]])
     print(results[['timer_fwd','timer_bwd']])
     print(results[['alloc_fwd','alloc_bwd','res_fwd','res_bwd']])
-    print(results[['fwdbwd_mem','trainable_params','macs']])
+    print(results[['fwdbwd_mem','total_params','macs']])
     exit(0)
     # -- get bench--
     # for i in range(32):
