@@ -13,6 +13,12 @@ from torch.utils.data import Dataset
 from pathlib import Path
 import pandas as pd
 import numpy as np
+from pytorch_lightning.profilers import SimpleProfiler
+
+# -- wandb logger --
+import pandas as pd
+import wandb
+
 
 import os,shutil
 import torch
@@ -22,7 +28,7 @@ from torch.utils.data import DataLoader, random_split, Dataset
 from torchvision.datasets import MNIST
 from torchvision import transforms
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.loggers import CSVLogger,WandbLogger
 from pytorch_lightning import Callback
 # from lightning.pytorch.callbacks import Callback
 # from pytorch_lightning.metrics.functional import accuracy
@@ -78,6 +84,7 @@ class BoringModel(LightningModule):
         self.scheduler_name = scheduler_name
         self.layer = torch.nn.Linear(32, 2)
         self.ckpt_path = ckpt_path
+        self.limit_train_batches = 600
         # self.automatic_optimization = False
 
     def forward(self, x):
@@ -92,7 +99,7 @@ class BoringModel(LightningModule):
         # -- forward --
         output = self.layer(batch)
         loss = self.loss(batch, output)
-        lr = self.optimizers()._optimizer.param_groups[-1]['lr']
+        lr = self.optimizers()._optimizer.param_groups[0]['lr']
         # lr = self.optimizers().param_groups[-1]['lr']
 
         # # -- backward --
@@ -113,13 +120,15 @@ class BoringModel(LightningModule):
         #     sch.step()
 
         # # step every `n` epochs
-        # if self.trainer.is_last_batch and (self.trainer.current_epoch + 1) % n == 0:
-        #     sch.step()
+        if self.trainer.is_last_batch:
+            print("lr: ",lr)
+            # sch.step()
 
         # -- log --
         # print(self.optimizers().state_dict())
         self.log("loss", loss)
         self.log("lr", lr)
+        # print("lr: ",lr)
         return {"loss": loss,"lr": lr}
 
     # def on_train_start(self):
@@ -128,6 +137,8 @@ class BoringModel(LightningModule):
     #     self.optimizers().param_groups = self.optimizers()._optimizer.param_groups
 
     def training_step_end(self, training_step_outputs):
+        # lr = self.optimizers()._optimizer.param_groups[-1]['lr']
+        # print(lr)
         return training_step_outputs
 
     # def training_epoch_end(self, outputs) -> None:
@@ -136,9 +147,13 @@ class BoringModel(LightningModule):
     def num_steps(self) -> int:
         """Get number of steps"""
         # Accessing _data_source is flaky and might break
-        dataset = self.trainer.fit_loop._data_source.dataloader()
-        dataset_size = len(dataset)
-        num_devices = max(1, self.trainer.num_devices)
+        if self.limit_train_batches > 0:
+            dataset_size = self.limit_train_batches
+            num_devices = 1
+        else:
+            dataset = self.trainer.fit_loop._data_source.dataloader()
+            dataset_size = len(dataset)
+            num_devices = max(1, self.trainer.num_devices)
         acc = self.trainer.accumulate_grad_batches
         num_steps = dataset_size * self.trainer.max_epochs // (acc * num_devices)
         return num_steps
@@ -172,7 +187,9 @@ class BoringModel(LightningModule):
         lrs = torch.optim.lr_scheduler
         if self.scheduler_name == "cosine_annealing":
             num_steps = self.num_steps()
-            lr_scheduler = lrs.CosineAnnealingLR(optimizer, T_max=num_steps)
+            print("num_steps: ",num_steps)
+            # lr_scheduler = lrs.CosineAnnealingLR(optimizer, T_max=num_steps)
+            lr_scheduler = lrs.CosineAnnealingLR(optimizer, num_steps)
             scheduler = {"scheduler": lr_scheduler, "interval": "step", "frequency": 1}
         elif self.scheduler_name in ["coswr","cosw"]:
             lr_sched =th.optim.lr_scheduler
@@ -211,26 +228,50 @@ def test_x(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing"):
     model_checkpoint = pl.callbacks.ModelCheckpoint(save_top_k=nepochs, monitor="loss",
                                                     dirpath=tmpdir/"checkpoints_x",
                                                     filename="dev-{epoch:02d}")
-    lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval="step")
+    lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval="epoch")
     callbacks = [model_checkpoint, lr_monitor]
-    logger = CSVLogger(tmpdir/"csv_logger_x", name="loggin")
+    # callbacks = [lr_monitor]
+    # logger = CSVLogger(tmpdir/"csv_logger_x", name="loggin")
+    logger = WandbLogger(name="test_x",project="testing")
+
+    # -- profiling --
+    prof = SimpleProfiler("train")
 
     # Initialize a trainer
     trainer = pl.Trainer(
         log_every_n_steps=1,
+        limit_train_batches=600,
         max_epochs=nepochs,
         callbacks=callbacks,
         logger=logger,
-        devices=1,
+        devices=2,
+        # profiler=prof,
+        # enable_checkpointing=False,
     )
 
     # Train the model ⚡
     trainer.fit(model, train, val)
 
     # Load Learning Rate
-    lr = pd.read_csv(tmpdir/"csv_logger_x/loggin/version_0/metrics.csv")['lr']
-    lr = lr.dropna()
-    lr = lr.to_numpy()
+    api = wandb.Api()
+    runs = api.runs("gauenk/testing")
+    print("len(runs) :",len(runs))
+    runs = [r for r in runs if r.name == "test_x"]
+    print("len(runs) :",len(runs))
+    print(dir(runs[0]))
+    run = [r for r in runs if r.name == "test_x"][-1]
+    run.wait_until_finished()
+    # print(dir(run))
+    hist = run.history(samples=600*nepochs).sort_values("_runtime")
+    print(hist)
+    print(len(hist))
+    lr = hist['lr'].to_numpy()
+    print("[test_x] lr: ",lr.shape)
+
+    # Load Learning Rate
+    # lr = pd.read_csv(tmpdir/"csv_logger_x/loggin/version_0/metrics.csv")['lr']
+    # lr = lr.dropna()
+    # lr = lr.to_numpy()
 
     return lr
 
@@ -249,7 +290,8 @@ def test_y(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing",
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval="step")
     # callbacks = [resume,model_checkpoint,lr_monitor]
     callbacks = [model_checkpoint,lr_monitor]
-    logger = CSVLogger(tmpdir/f"csv_logger_{name}", name="loggin")
+    logger = WandbLogger(name="test_y",project="testing")
+    # logger = CSVLogger(tmpdir/f"csv_logger_{name}", name="loggin")
 
     # Initialize a trainer
     trainer = pl.Trainer(
@@ -264,9 +306,17 @@ def test_y(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing",
     trainer.fit(model, train, val, ckpt_path=ckpt_path)
 
     # Load Learning Rate
-    lr = pd.read_csv(tmpdir/f"csv_logger_{name}/loggin/version_0/metrics.csv")['lr']
-    lr = lr.dropna()
-    lr = lr.to_numpy()
+    api = wandb.Api()
+    runs = api.runs("gauenk/testing")
+    run = [r for r in runs if r.name == "test_y"][0]
+    hist = run.history()
+    lr = hist['lr'].to_numpy()
+    print("lr: ",lr.shape)
+
+    # # Load Learning Rate
+    # lr = pd.read_csv(tmpdir/f"csv_logger_{name}/loggin/version_0/metrics.csv")['lr']
+    # lr = lr.dropna()
+    # lr = lr.to_numpy()
 
     return lr
 
@@ -285,7 +335,8 @@ def test_z(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing",
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval="step")
     # callbacks = [resume,model_checkpoint,lr_monitor]
     callbacks = [model_checkpoint,lr_monitor]
-    logger = CSVLogger(tmpdir/f"csv_logger_{name}", name="loggin")
+    logger = WandbLogger(name="test_z",project="testing")
+    # logger = CSVLogger(tmpdir/f"csv_logger_{name}", name="loggin")
 
     # Initialize a trainer
     trainer = pl.Trainer(
@@ -314,9 +365,17 @@ def test_z(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing",
     trainer.fit(model, train, val, ckpt_path=ckpt_path)
 
     # Load Learning Rate
-    lr = pd.read_csv(tmpdir/f"csv_logger_{name}/loggin/version_0/metrics.csv")['lr']
-    lr = lr.dropna()
-    lr = lr.to_numpy()
+    api = wandb.Api()
+    runs = api.runs("gauenk/testing")
+    run = [r for r in runs if r.name == "test_z"][0]
+    hist = run.history()
+    lr = hist['lr'].to_numpy()
+    print("lr: ",lr.shape)
+
+    # # Load Learning Rate
+    # lr = pd.read_csv(tmpdir/f"csv_logger_{name}/loggin/version_0/metrics.csv")['lr']
+    # lr = lr.dropna()
+    # lr = lr.to_numpy()
 
     return lr
 
@@ -345,35 +404,42 @@ def viz_lrs(lr0,lr1,lr2):
 
 def main():
 
+    # -- init --
+    print("PID: ",os.getpid())
+
     # -- datasets --
-    num_samples = 320
+    num_samples = 2000
     train = RandomDataset(32, num_samples)
-    train = DataLoader(train, batch_size=32)
+    train = DataLoader(train, batch_size=1, num_workers=4)
     val = RandomDataset(32, num_samples)
-    val = DataLoader(val, batch_size=32)
+    val = DataLoader(val, batch_size=1)
     test = RandomDataset(32, num_samples)
-    test = DataLoader(test, batch_size=32)
+    test = DataLoader(test, batch_size=1)
 
     # -- config --
-    nepochs = 30
+    nepochs = 1000
+    # scheduler_name = "multistep"
+    scheduler_name = "cosine_annealing"
     # scheduler_name = "cosine_annealing"
-    # scheduler_name = "cosine_annealing"
-    scheduler_name = "cosw"
+    # scheduler_name = "cosw"
 
     # -- testing --
     output = Path("output/dev/lightning_logs/")
     if output.exists(): shutil.rmtree(str(output))
     output.mkdir(parents=True)
     lr0 = test_x(train,val,output,nepochs,scheduler_name)
+    print(lr0)
+    print(lr0.reshape(-1,num_samples).mean(-1))
     lr1 = test_y(train,val,output,nepochs,scheduler_name,
-                   resume_epoch=int(0.1*nepochs),resume_name="x",name="y")
+                   resume_epoch=int(0.5*nepochs),resume_name="x",name="y")
     lr1_1 = test_y(train,val,output,nepochs,scheduler_name,
-                   resume_epoch=int(0.5*nepochs),resume_name="y",name="y1")
+                   resume_epoch=int(0.8*nepochs),resume_name="y",name="y1")
     lr2 = test_z(train,val,output,nepochs,scheduler_name,
-                   resume_epoch=int(0.1*nepochs),resume_name="x",name="z")
+                   resume_epoch=int(0.5*nepochs),resume_name="x",name="z")
     lr2_1 = test_z(train,val,output,nepochs,scheduler_name,
-                   resume_epoch=int(0.5*nepochs),resume_name="z",name="z1")
+                   resume_epoch=int(0.8*nepochs),resume_name="z",name="z1")
 
+    print(lr0)
 
     # -- check weights --
     weights_x = load_weights(output,"x",nepochs)

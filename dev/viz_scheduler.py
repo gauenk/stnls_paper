@@ -23,7 +23,7 @@ def collect_lrs(optim,scheduler,nsteps):
 def main():
 
     model = NullModule()
-    lr = 3e-4
+    lr = 1e-4
     optimizer = th.optim.Adam(model.parameters(),lr=lr,weight_decay=1e-6)
     # ChainedScheduler = th.optim.lr_scheduler.ChainedScheduler
     StepLR = th.optim.lr_scheduler.StepLR
@@ -38,7 +38,7 @@ def main():
     lr_final = 1e-6
     eta_min = 1e-8
     gamma = 0.9
-    nsteps = 100
+    nsteps = 600000
     print(optimizer)
     gamma = math.exp(math.log(lr_final/lr)/nsteps)
     print(gamma)
@@ -66,7 +66,9 @@ def main():
     milestones = 10*np.arange(10)[2::2]
     print(milestones)
     scheduler = MultiStepLR(optimizer,milestones=milestones,gamma=.5)
+    print("nsteps: ",nsteps)
     # gamma = math.exp(math.log(lr_final/lr)/nsteps)
+    scheduler = CosineAnnealingLR(optimizer,nsteps)
     # print(gamma)
     # scheduler = ExponentialLR(optimizer,gamma=gamma)
 
@@ -83,6 +85,10 @@ def main():
     #       scheduler.get_lr())
     print(scheduler.get_lr())
     lrs = collect_lrs(optimizer,scheduler,nsteps)
+    lrs = lrs.reshape(-1,600).mean(-1)
+    print(lrs)
+    # print(lrs[50])
+    # print(lrs[0],lrs[25000])
     print(len(lrs))
     plt.plot(lrs)
     print(lrs[-1])
