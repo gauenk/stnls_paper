@@ -42,8 +42,8 @@ def main():
     # vshape = (1,10,3,512,512)
     # vshape = (1,5,3,360,360)
     # vshape = (2,6,3,256,256)
-    vshape = (4,4,3,256,256)
-    # vshape = (1,10,3,256,256)
+    # vshape = (4,4,3,256,256)
+    vshape = (1,10,3,256,256)
     # vshape = (1,10,3,280,280)
     n = 0
     for exp in exps:
@@ -51,11 +51,14 @@ def main():
         res.arch_depth = exp.arch_depth
         res.arch_nheads = exp.arch_nheads
         res.embed_dim = exp.embed_dim
+        res.qk_frac = exp.qk_frac
+        res.num_res = exp.num_res
+        res.nres_per_block = exp.nres_per_block
         results.append(res)
         # if n > 5: break
         n+=1
     results = pd.DataFrame(results)
-    print(results[['arch_depth','arch_nheads','embed_dim']])
+    print(results[['arch_depth','arch_nheads','embed_dim','qk_frac','num_res','nres_per_block']])
     print(results[['timer_fwd','trainable_params',"macs"]])
     print(results[['timer_fwd','timer_bwd']])
     print(results[['alloc_fwd','alloc_bwd','res_fwd','res_bwd']])
