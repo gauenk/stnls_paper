@@ -16,6 +16,7 @@ import numpy as np
 from pytorch_lightning.profilers import SimpleProfiler
 
 # -- wandb logger --
+import uuid
 import pandas as pd
 import wandb
 
@@ -232,7 +233,14 @@ def test_x(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing"):
     callbacks = [model_checkpoint, lr_monitor]
     # callbacks = [lr_monitor]
     # logger = CSVLogger(tmpdir/"csv_logger_x", name="loggin")
-    logger = WandbLogger(name="test_x",project="testing")
+    uuid_str = str(uuid.uuid4())
+    name = "test_x_%s"%uuid_str
+    print("name: ",name)
+    RANK = int(os.environ.get('LOCAL_RANK', 0))
+    if RANK == 0:
+        logger = WandbLogger(name=name,project="testing_anvil")
+    else:
+        logger = None
 
     # -- profiling --
     prof = SimpleProfiler("train")
@@ -244,7 +252,7 @@ def test_x(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing"):
         max_epochs=nepochs,
         callbacks=callbacks,
         logger=logger,
-        devices=2,
+        devices=4,
         # profiler=prof,
         # enable_checkpointing=False,
     )
@@ -254,12 +262,12 @@ def test_x(train,val,tmpdir,nepochs=5,scheduler_name="cosine_annealing"):
 
     # Load Learning Rate
     api = wandb.Api()
-    runs = api.runs("gauenk/testing")
+    runs = api.runs("gauenk/testing_anvil")
     print("len(runs) :",len(runs))
-    runs = [r for r in runs if r.name == "test_x"]
+    runs = [r for r in runs if r.name == name]
     print("len(runs) :",len(runs))
     print(dir(runs[0]))
-    run = [r for r in runs if r.name == "test_x"][-1]
+    run = [r for r in runs if r.name == name][0]
     run.wait_until_finished()
     # print(dir(run))
     hist = run.history(samples=600*nepochs).sort_values("_runtime")
@@ -408,7 +416,7 @@ def main():
     print("PID: ",os.getpid())
 
     # -- datasets --
-    num_samples = 2000
+    num_samples = 2400
     train = RandomDataset(32, num_samples)
     train = DataLoader(train, batch_size=1, num_workers=4)
     val = RandomDataset(32, num_samples)
@@ -424,9 +432,11 @@ def main():
     # scheduler_name = "cosw"
 
     # -- testing --
+    RANK = int(os.environ.get('LOCAL_RANK', 0))
     output = Path("output/dev/lightning_logs/")
-    if output.exists(): shutil.rmtree(str(output))
-    output.mkdir(parents=True)
+    if RANK == 0:
+        if output.exists(): shutil.rmtree(str(output))
+        output.mkdir(parents=True)
     lr0 = test_x(train,val,output,nepochs,scheduler_name)
     print(lr0)
     print(lr0.reshape(-1,num_samples).mean(-1))
