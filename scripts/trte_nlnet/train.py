@@ -30,6 +30,9 @@ def main():
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet/train.cfg",
                                            ".cache_io_exps/trte_nlnet/train/",
                                            update=True)
+    uuids = ["8b8aa3a4-e197-4857-9dbc-3bf11fa462d3",
+             "5bac0f65-1828-40df-bcd2-1c8ab9169362",
+             "c6bcb0b5-c5ba-4a7c-bf00-1d2e45fa2b57"]
 
     # -- run exps --
     results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
