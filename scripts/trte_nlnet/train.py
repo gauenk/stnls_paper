@@ -31,7 +31,6 @@ def main():
                                            ".cache_io_exps/trte_nlnet/train/",
                                            update=True)
     print("Num Exps: ",len(exps))
-    print(uuids)
 
     # -- run exps --
     results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
