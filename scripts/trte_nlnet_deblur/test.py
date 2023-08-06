@@ -45,7 +45,7 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_nlnet/test.pkl",
-                                records_reload=True,to_records_fast=False,
+                                records_reload=True,to_records_fast=True,
                                 use_wandb=True,proj_name="nlnet_test")
 
     # -- get bench--
@@ -54,13 +54,12 @@ def main():
     # -- view --
     print(len(results))
     if len(results) == 0: return
-    # results = results[results['input_proj_depth'] == 1].reset_index(drop=True)
-    # results = results[results['read_flows'] == True].reset_index(drop=True)
-    # results = results[results['embed_dim'] == 12].reset_index(drop=True)
-    # results = results.rename(columns={"gradient_clip_val":"gcv"})
+    results = results[results['input_proj_depth'] == 1].reset_index(drop=True)
+    results = results[results['read_flows'] == True].reset_index(drop=True)
+    results = results[results['embed_dim'] == 12].reset_index(drop=True)
+    results = results.rename(columns={"gradient_clip_val":"gcv"})
     afields = ['psnrs','ssims','strred']
-    # gfields = ["sigma",'label0','dname','embed_dim','ws','pretrained_path']
-    gfields = ["sigma",'vid_name']#'pretrained_path']
+    gfields = ["sigma","gcv",'label0','dname','embed_dim','ws','pretrained_path']
     # gfields = ["gcv",'ws','nheads','pretrained_path','sigma','dname',
     #            'read_flows','label0']
     # gfields = ["gcv",'ws','nheads','pretrained_path','sigma','dname',
@@ -73,7 +72,6 @@ def main():
     results = results.reset_index()[gfields + afields]
     print(len(results))
     print(results)
-    print(results['psnrs'].mean(),results['ssims'].mean())
     # results0 = results[results['sigma'] == 30]
     # results0 = results0[results0['label0'] == "(300,30)"]
     # print(results0.sort_values(["gcv","dname","embed_dim"])[gfields0+afields])

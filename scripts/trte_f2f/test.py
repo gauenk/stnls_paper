@@ -27,7 +27,7 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    refresh = False
+    refresh = True
     def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_f2f/test.cfg",
