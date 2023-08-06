@@ -30,7 +30,7 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    refresh = True
+    refresh = False
     def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_nlnet/test.cfg",
