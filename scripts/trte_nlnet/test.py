@@ -30,11 +30,12 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    refresh = False
+    refresh = True
     def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_nlnet/test.cfg",
-                     ".cache_io_exps/trte_nlnet/test",reset=refresh,skip_dne=refresh)
+                     ".cache_io_exps/trte_nlnet/test",
+                     reset=refresh,skip_dne=refresh)
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_nlnet/test",
                                     no_config_check=False,update=refresh)
     print("len(exps): ",len(exps))
