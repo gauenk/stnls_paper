@@ -31,56 +31,56 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    refresh = False
+    refresh = True
     def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
-    exps = read_test("exps/trte_tinyvrt/test.cfg",
-                     ".cache_io_exps/trte_tinyvrt/test",reset=refresh,skip_dne=refresh)
-    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_tinyvrt/test",
+    exps = read_test("exps/trte_rvrt/test.cfg",
+                     ".cache_io_exps/trte_rvrt/test",reset=refresh,skip_dne=refresh)
+    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_rvrt/test",
                                     reset=refresh,no_config_check=refresh)
     print(len(exps))
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
-                                name=".cache_io/trte_tinyvrt/test",
+                                name=".cache_io/trte_rvrt/test",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
-                                records_fn=".cache_io_pkl/trte_tinyvrt/test.pkl",
+                                records_fn=".cache_io_pkl/trte_rvrt/test.pkl",
                                 records_reload=False,to_records_fast=True)
 
     # -- get bench--
-    bench.print_summary(exps[0],(1,3,3,128,128))
+    # bench.print_summary(exps[0],(1,4,4,256,256))
 
-    # -- view --
-    print(results['nepochs'].unique())
-    print(len(results))
-    if len(results) == 0: return
-    # print(results['pretrained_path'].unique())
-    results = results.rename(columns={"gradient_clip_val":"gcv"})
-    results = results[results["spynet_path"] != ""].reset_index(drop=True)
-    results = results[results["rate"] == -1].reset_index(drop=True)
-    afields = ['psnrs','ssims','strred']
-    gfields = ["sigma","gcv",'nepochs','label0','dname','tr_uuid','pretrained_path']
-    gfields0 = [gfields[i] for i in range(len(gfields)-2)]
-    agg_fxn = lambda x: np.mean(np.stack(x))
-    for f in afields: results[f] = results[f].apply(np.mean)
-    results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
-    results = results.reset_index()[gfields + afields]
-    print(len(results))
+    # # -- view --
+    # print(results['nepochs'].unique())
+    # print(len(results))
+    # if len(results) == 0: return
+    # # print(results['pretrained_path'].unique())
+    # results = results.rename(columns={"gradient_clip_val":"gcv"})
+    # results = results[results["spynet_path"] != ""].reset_index(drop=True)
+    # results = results[results["rate"] == -1].reset_index(drop=True)
+    # afields = ['psnrs','ssims','strred']
+    # gfields = ["sigma","gcv",'nepochs','label0','dname','tr_uuid','pretrained_path']
+    # gfields0 = [gfields[i] for i in range(len(gfields)-2)]
+    # agg_fxn = lambda x: np.mean(np.stack(x))
+    # for f in afields: results[f] = results[f].apply(np.mean)
+    # results = results.groupby(gfields).agg({k:agg_fxn for k in afields})
+    # results = results.reset_index()[gfields + afields]
+    # print(len(results))
 
-    results0 = results[results['nepochs'] == 200]
-    results0 = results0[results0['sigma'] == 30]
-    print(results0[gfields0+afields])
-    results0 = results[results['nepochs'] == 200]
-    results0 = results0[results0['sigma'] == 50]
-    print(results0[gfields0+afields])
+    # results0 = results[results['nepochs'] == 200]
+    # results0 = results0[results0['sigma'] == 30]
+    # print(results0[gfields0+afields])
+    # results0 = results[results['nepochs'] == 200]
+    # results0 = results0[results0['sigma'] == 50]
+    # print(results0[gfields0+afields])
 
-    results0 = results[results['nepochs'] == 300]
-    results0 = results0[results0['sigma'] == 30]
-    print(results0[gfields0+afields])
-    results0 = results[results['nepochs'] == 300]
-    results0 = results0[results0['sigma'] == 50]
-    print(results0[gfields0+afields])
+    # results0 = results[results['nepochs'] == 300]
+    # results0 = results0[results0['sigma'] == 30]
+    # print(results0[gfields0+afields])
+    # results0 = results[results['nepochs'] == 300]
+    # results0 = results0[results0['sigma'] == 50]
+    # print(results0[gfields0+afields])
 
     # print(results['tr_uuid'])
 
