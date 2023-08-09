@@ -33,20 +33,20 @@ def main():
     refresh = True
     def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
-    exps = read_test("exps/trte_nlnet/test.cfg",
-                     ".cache_io_exps/trte_nlnet/test",reset=refresh,skip_dne=refresh)
-    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_nlnet/test",
+    exps = read_test("exps/trte_nlnet_deblur/test.cfg",
+                     ".cache_io_exps/trte_nlnet_deblur/test",reset=refresh,skip_dne=refresh)
+    exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_nlnet_deblur/test",
                                     no_config_check=False,update=refresh)
     print("len(exps): ",len(exps))
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,
-                                name=".cache_io/trte_nlnet/test",
+                                name=".cache_io/trte_nlnet_deblur/test",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
-                                records_fn=".cache_io_pkl/trte_nlnet/test.pkl",
+                                records_fn=".cache_io_pkl/trte_nlnet_deblur/test.pkl",
                                 records_reload=True,to_records_fast=True,
-                                use_wandb=True,proj_name="nlnet_test")
+                                use_wandb=True,proj_name="nlnet_deblur_test")
 
     # -- get bench--
     # bench.print_summary(exps[304],(1,3,3,128,128))
@@ -59,7 +59,7 @@ def main():
     results = results[results['embed_dim'] == 12].reset_index(drop=True)
     results = results.rename(columns={"gradient_clip_val":"gcv"})
     afields = ['psnrs','ssims','strred']
-    gfields = ["sigma","gcv",'label0','dname','embed_dim','ws','pretrained_path']
+    gfields = ["gcv",'label0','dname','embed_dim','ws','pretrained_path']
     # gfields = ["gcv",'ws','nheads','pretrained_path','sigma','dname',
     #            'read_flows','label0']
     # gfields = ["gcv",'ws','nheads','pretrained_path','sigma','dname',
