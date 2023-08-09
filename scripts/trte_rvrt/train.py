@@ -28,9 +28,10 @@ def main():
     # -- get/run experiments --
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_rvrt/train.cfg",
-                                           ".cache_io/trte_rvrt/train/",
+                                           ".cache_io_exps/trte_rvrt/train/",
                                            update=True)
     print(len(exps))
+    print(uuids)
 
     # -- get bench--
     # bench.print_summary(exps[0],(1,3,3,128,128))
