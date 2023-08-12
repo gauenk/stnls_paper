@@ -45,7 +45,7 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_nlnet_deblur/test.pkl",
-                                records_reload=True,to_records_fast=True,
+                                records_reload=True,to_records_fast=False,
                                 use_wandb=True,proj_name="nlnet_deblur_test")
 
     # -- get bench--

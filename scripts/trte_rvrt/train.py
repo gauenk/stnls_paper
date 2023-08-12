@@ -35,7 +35,7 @@ def main():
 
     # -- get bench--
     # bench.print_summary(exps[0],(1,3,3,128,128))
-    results = cache_io.run_exps(exps,train.run,uuids=uuids,
+    results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,
                                 name=".cache_io/trte_rvrt/train",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
