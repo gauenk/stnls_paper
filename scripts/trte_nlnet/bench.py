@@ -47,8 +47,10 @@ def main():
     # vshape = (1,5,4,256,256)
     # vshape = (1,10,3,256,256)
     # vshape = (1,10,3,280,280)
+    vshape = list(vshape)
     n = 0
     for exp in exps:
+        vshape[-3] = exp.dd_in if "dd_in" in exp else 3
         exp.spatial_chunk_size = 256
         exp.spatial_chunk_overlap = 0.25
         exp.temporal_chunk_size = 5
