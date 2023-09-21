@@ -1,6 +1,8 @@
 
 import torch as th
 import numpy as np
+import cv2
+
 import torchvision.transforms.functional as TF
 from torchvision.transforms import InterpolationMode
 from torchvision.transforms.functional import center_crop
@@ -129,8 +131,44 @@ def run_exps(cfg,dcfg):
     # # vid_cc = vid[:,:,:,sH:eH,sW:eW]
     vid_io.save_video(vid,root,"cc",itype="png")
 
+    if "tractor" in dcfg.vid_name:
+        val = 20
+        ref = increase_brightness(ref, value=val)
+        prop = increase_brightness(prop, value=val)
+        aligned = increase_brightness(aligned, value=val)
 
     return ref,prop,aligned,psnrs[0].item()
+
+def increase_brightness_vid(vid, value=30):
+    T = vid.shape[0]
+    for t in range(T):
+        vid[t] = increase_brightness(vid[t], value=30)
+    return vid
+
+def increase_brightness(img, value=30):
+
+    device = img.device
+    img = img.cpu().numpy()
+    img = rearrange(img,'c h w -> h w c')
+    img /= img.max()
+    img *= 255
+    img = np.clip(img,0,255).astype(np.uint8)
+
+    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    h, s, v = cv2.split(hsv)
+
+    lim = 255 - value
+    v[v > lim] = 255
+    v[v <= lim] += value
+
+    final_hsv = cv2.merge((h, s, v))
+    img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2RGB)
+
+    img = th.from_numpy(img).to(device)
+    img = rearrange(img,'h w c -> c h w')*1.
+    img /= img.max()
+
+    return img
 
 def run_grid(dcfg,vid_names):
     ps = 3
@@ -151,7 +189,7 @@ def run_grid(dcfg,vid_names):
                        "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":False,
                        "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW}),
                 edict({"name":"stnls","ps":1,"ws":1,"full_ws":False,
-                       "wt":1,"k":3,"stride0":1,"stride1":.1,"flow":True,
+                       "wt":1,"k":1,"stride0":1,"stride1":.1,"flow":True,
                        "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW}),
                 edict({"name":"stnls","ps":ps,"ws":ws,"full_ws":False,
                        "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":True,
@@ -196,7 +234,8 @@ def main():
                   "swing:0:96-292-192-388",
                   "stroller:0:128-384-64-320",
                   "dog-gooses:0:80-176-128-224",
-                  "drone:0:128-320-128-320","hockey:0:64-192-224-352",
+                  "drone:0:128-320-128-320",
+                  "hockey:0:64-192-224-352",
                   "lady-running:0:64-256-64-256",
                   "lindy-hop:0:64-256-320-512",
                   "tennis:0:96-292-96-292",
@@ -231,9 +270,15 @@ def main():
     vid_names = ["color-run:0:192-256-300-364",
                  "kid-football:0:18-176-8-170",
                  "tennis:0:96-292-96-292",
+                 "scooter-gray:1:44-158-160-274",
                  # "swing:0:106-198-218-314",
-                 # "scooter-gray:1:44-158-160-274",
                  # "tennis:0:96-292-96-292",
+                 "lindy-hop:0:74-174-340-440",
+                 "walking:1:192-320-128-256",
+                 # "scooter-board:1:112-256-220-362",
+                 "stroller:0:138-266-74-202",
+                 # "dog-gooses:0:80-176-128-224",
+                 "tractor-sand:0:128-292-128-292",
     ]
     fstart = 0
     fend = fstart + 5 - 1
@@ -241,8 +286,12 @@ def main():
                   "nframes":5,"frame_start":fstart,"frame_end":fend,
                   "isize":"512_512","seed":123})
     grid,psnrs = run_grid(dcfg,vid_names)
-    grid = make_grid(grid.flatten(0,1),nrow=grid.shape[1])
-    save_image(grid,'grid.png')
+    print(grid.shape)
+    nrow = grid.shape[0]
+    grid = grid.transpose(0,1).flatten(0,1)
+    print(grid.shape)
+    grid = make_grid(grid,nrow=nrow)
+    save_image(grid,'grid_a.png')
 
 if __name__ == "__main__":
     main()
