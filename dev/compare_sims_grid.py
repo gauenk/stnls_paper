@@ -100,6 +100,9 @@ def run_exps(cfg,dcfg):
     prop = ensure_size(vid[0,pi],tH,tW)
     aligned = ensure_size(stack[0,cfg.ai,cfg.ti],tH,tW)
 
+    psnrs_aligned = -20*th.log10(th.mean((ref-aligned)**2)).item()
+    psnrs = th.tensor([psnrs_aligned])
+
     # # vid_io.save_video(stack[:,:,ti],root,"align",itype="png")
     # delta = th.abs(stack[:,:,ti] - vid[:,None,ti])
     # delta = th.abs(stack[:,:,ti] - vid[:,None,ti]).mean(-3,keepdim=True)
