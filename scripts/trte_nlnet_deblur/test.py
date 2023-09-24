@@ -1,6 +1,6 @@
 """
 
-Compare the impact of train/test using exact/refineimate methods
+Compare the impact of train/test using exact/refinement methods
 
 
 """

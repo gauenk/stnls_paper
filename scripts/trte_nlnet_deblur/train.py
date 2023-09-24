@@ -30,6 +30,7 @@ def main():
     exps,uuids = cache_io.train_stages.run("exps/trte_nlnet_deblur/train.cfg",
                                            ".cache_io_exps/trte_nlnet_deblur/train/",
                                            update=False)
+    print(uuids)
 
     # -- run exps --
     results = cache_io.run_exps(exps,train.run,uuids=uuids,preset_uuids=True,

@@ -30,7 +30,7 @@ def main():
     print("PID: ",pid)
 
     # -- get/run experiments --
-    refresh = True
+    refresh = False
     def clear_fxn(num,cfg): return False
     read_test = cache_io.read_test_config.run
     exps = read_test("exps/trte_nlnet/test.cfg",
@@ -41,7 +41,7 @@ def main():
     print("len(exps): ",len(exps))
 
     # -- run exps --
-    results = cache_io.run_exps(exps,test.run,uuids=uuids,
+    results = cache_io.run_exps(exps,test.run,uuids=uuids,#preset_uuids=True,
                                 name=".cache_io/trte_nlnet/test",
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
