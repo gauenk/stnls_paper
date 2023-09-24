@@ -76,7 +76,7 @@ def run_exps(cfg,dcfg):
                                              full_ws=cfg.full_ws,
                                              full_ws_time=cfg.full_ws,
                                              itype_fwd="float",itype_bwd="float")
-        stacking = stnls.tile.NonLocalStack(1,cfg.stride0,
+        stacking = stnls.tile.NonLocalStack(cfg.ps_stack,cfg.stride0,
                                             itype_fwd="float",itype_bwd="float")
         flows = flow.orun(nvid,cfg.flow,ftype="cv2")
         print(th.mean(flows.fflow**2).item(),th.mean(flows.bflow**2).item())
@@ -184,21 +184,27 @@ def main():
     vid_names = np.loadtxt(fn,str)
     # tough ones; dance-jump, dancing, dog-agility
     vid_names = ["cat-girl","classic-car","color-run","dog-gooses","drone","hockey","horsejump-low","kid-football","lady-running","lindy-hop","lucia","motorcross-bumps","motorbike","paragliding","scooter-board","scooter-grey","skate-park","snowboard","stroller","stunt","surf","swing","tennis","tractor-sand","tuk-tuk","upside-down","walking"]
+    vid_names = [vid_names[0]]
     for vid_name in vid_names:
         fstart = 0
         fend = fstart + 5 - 1
-        dcfg = edict({"dname":"davis","dset":"tr","vid_name":vid_name,"sigma":15,
+        dcfg = edict({"dname":"davis","dset":"tr","vid_name":vid_name,"sigma":0.,
                       "nframes":5,"frame_start":fstart,"frame_end":fend,
                       "isize":"512_512","seed":123})
         ps = 3
+        ps_stack = 3
         ws = 11
+        s0 = 2
         s1 = 0.5
-        cfgs = [edict({"name":"stnls","ps":ps,"ws":ws,"full_ws":False,
+        cfgs = [edict({"name":"stnls","ps":ps,"ps_stack":ps_stack,
+                       "ws":ws,"full_ws":False,
                        "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":False}),
-                edict({"name":"stnls","ps":1,"ws":1,"full_ws":False,
+                edict({"name":"stnls","ps":1,"ps_stack":1,
+                       "ws":1,"full_ws":False,
                        "wt":1,"k":3,"stride0":1,"stride1":.1,"flow":True}),
-                edict({"name":"stnls","ps":ps,"ws":ws,"full_ws":False,
-                       "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":True})]
+                edict({"name":"stnls","ps":ps,"ps_stack":ps_stack,
+                       "ws":ws,"full_ws":False,
+                       "wt":1,"k":1,"stride0":s0,"stride1":s1,"flow":True})]
         for cfg in cfgs:
             results = run_exps(cfg,dcfg)
 

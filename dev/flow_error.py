@@ -7,6 +7,12 @@ from torchvision.transforms import InterpolationMode
 from torchvision.utils import draw_bounding_boxes
 from torchvision.utils import save_image,make_grid
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+from matplotlib.patches import Ellipse
+
+
 import frame2frame
 from frame2frame.nb2nb_loss import generate_mask_pair,generate_subimages
 import stnls
@@ -203,15 +209,186 @@ def show_groups(cfg,dcfg):
     # print(grid.sum(),grid[0].sum(),grid[1].sum(),grid.sum()/(1.*grid[0].sum()))
     # for wi in range(wt):
     #     grid[:,wi] /= grid[:,wi].max()
-    grid = th.mean(grid,dim=(0,1,))[None,None,]
+    grid = th.mean(grid,dim=(0,1,))[None,]
     grid /= grid.max()
     prob = grid/grid.sum()
+    # grid = grid.repeat(3,1,1)#/grid.sum()
     # print(grid.shape)
+    # print((boxes*1.).mean((0,1,2)))
+    mean,cov = fit_gauss2d(boxes)
+    grid = add_contour(grid.repeat(3,1,1),mean,cov)
+    # mean.round()
+    # prob[mean.round
+
 
     root = Path("output/figures/flow_error/")
     # vid_io.save_video(grid,root,"ave",itype="png")
     # print(prob[0,0,19:22,19:22])
-    vid_io.save_video(nicer_image(grid),root,"ave",itype="png")
+    # print("grid.shape: ",grid.shape)
+    vid_io.save_video(nicer_image(grid[None,:]),root,"ave",itype="png")
+
+def add_contour(grid,mean,cov):
+
+    # -- plot on matplotlib --
+    grid = grid.cpu()
+    dpi = 100
+    fig,ax = im_plot(grid,dpi)
+
+    # print(grid.shape,mean,cov,grid.max(),grid.min())
+    # print(mean,cov)
+    prob = grid[0]/grid[0].sum()
+    # ax.contour(prob, [0.01,0.05], origin='lower',colors='blue')
+    plot_2d_ci(ax,prob.cpu().numpy(),mean.cpu().numpy(),
+               cov.cpu().numpy(),nstd=1.,alpha=0.5, color='#0000FF')
+    plot_2d_ci(ax,prob.cpu().numpy(),mean.cpu().numpy(),
+               cov.cpu().numpy(),nstd=1.645,alpha=0.5, color='#FF0000')
+
+    grid = get_plt_image(fig,ax)
+
+    # # -- add mean --
+    # mean_r = mean.round()
+    # prob[:,mean_r[0],mean_r[1]] = 0
+    # prob[2,mean_r[0],mean_r[1]] = 1
+
+    return grid
+
+def plot_2d_ci(ax,prob,mean,cov,nstd=1,**kwargs):
+    def eigsorted(cov):
+        vals, vecs = np.linalg.eigh(cov)
+        order = vals.argsort()[::-1]
+        return vals[order], vecs[:,order]
+
+    vals, vecs = eigsorted(cov)
+    theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
+
+    # Width and height are "full" widths, not radius
+    width, height = 2 * nstd * np.sqrt(vals)
+    ellip = Ellipse(xy=mean+0.5, width=width, height=height, angle=theta,
+                    fill=None,linewidth=4.,**kwargs)
+    print("height,width: ",height/2.,width/2.)
+
+    ax.add_artist(ellip)
+    color = kwargs.pop("color","k")
+
+    vals, vecs = eigsorted(np.sqrt(2*nstd)*cov)
+    theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
+    # print("vals: " ,vals)
+    # print("vecs: ",vecs)
+    a = np.sqrt(1/vals[0])
+    b = np.sqrt(1/vals[1])
+    # a,b = vals[0],vals[1]
+    sign = 1 if nstd < 1.5 else -1
+    # plot_2d_vecs(ax,a,b,mean+0.5,vecs,theta,color,sign)
+    # show_ellipse_axis(ax,ellip,**kwargs)
+
+def show_ellipse_axis(ax,ellipse,**kwargs):
+    col = kwargs.pop("color","k")
+    # ax.annotate("",
+    #             xy=(ellipse.center[0], ellipse.center[1] - ellipse.height / 2),
+    #             xytext=(ellipse.center[0], ellipse.center[1] + ellipse.height / 2),
+    #             arrowprops=dict(arrowstyle="<->", color=col))
+    # ax.annotate("",
+    #             xy=(ellipse.center[0] - ellipse.width / 2, ellipse.center[1]),
+    #             xytext=(ellipse.center[0] + ellipse.width / 2, ellipse.center[1]),
+    #             arrowprops=dict(arrowstyle="<->", color=col))
+    ax.annotate("",
+            xy=(ellipse.center[0] - ellipse.width / 2 * np.cos(np.deg2rad(ellipse.angle)), 
+                ellipse.center[1] - ellipse.height / 2 * np.sin(np.deg2rad(ellipse.angle))),
+            xytext=(ellipse.center[0] + ellipse.width / 2 * np.cos(np.deg2rad(ellipse.angle)), 
+                    ellipse.center[1] + ellipse.height / 2 * np.sin(np.deg2rad(ellipse.angle))),
+            arrowprops=dict(arrowstyle="<->", color=col))
+
+    ax.annotate("",
+            xy=(ellipse.center[0] - ellipse.width / 2 * np.cos(np.deg2rad(ellipse.angle)), 
+                ellipse.center[1] - ellipse.height / 2 * np.sin(np.deg2rad(ellipse.angle))),
+            xytext=(ellipse.center[0] + ellipse.width / 2 * np.cos(np.deg2rad(ellipse.angle)), 
+                    ellipse.center[1] + ellipse.height / 2 * np.sin(np.deg2rad(ellipse.angle))),
+            arrowprops=dict(arrowstyle="<->", color=col))
+
+def plot_2d_vecs(ax,a,b,center,eigenvectors,rotation_angle,color,sign):
+    rotation_matrix = np.array([[np.cos(rotation_angle), -np.sin(rotation_angle)],
+                                [np.sin(rotation_angle), np.cos(rotation_angle)]])
+    rotated_eigenvectors = np.dot(rotation_matrix, eigenvectors).T
+    # Scale the eigenvectors according to the axis
+    # print(".")
+    # print(a,b,eigenvectors)
+    # print(rotated_eigenvectors)
+    # print(".")
+    rotated_eigenvectors[0] = a * rotated_eigenvectors[0] / np.linalg.norm(rotated_eigenvectors[0])
+    rotated_eigenvectors[1] = b * rotated_eigenvectors[1] / np.linalg.norm(rotated_eigenvectors[1])
+    props = {'scale_units' : 'xy','angles' : 'xy', 'scale' : 1, "color":color}
+    plot_vector(ax, center, sign*rotated_eigenvectors[0], **props)
+    plot_vector(ax, center, sign*rotated_eigenvectors[1], **props)
+
+
+def plot_vector(ax: plt.Axes, start_point: np.ndarray, vector: np.ndarray, **properties) -> None:
+    """
+    Plot a vector given its starting point and displacement vector.
+
+    Args:
+        ax (matplotlib.axes.Axes): The matplotlib axes on which to plot the vector.
+        start_point (np.ndarray): A 2D numpy array representing the starting point of the vector.
+        vector (np.ndarray): A 2D numpy array representing the displacement vector.
+        **properties: Additional properties to be passed to the quiver function.
+
+    Returns:
+        None
+    """
+    displacement = vector - start_point
+    ax.quiver(start_point[0], start_point[1], vector[0], vector[1], **properties)
+    # ax.quiver(start_point[0], start_point[1], displacement[0], displacement[1], **properties)
+
+def get_plt_image(fig,ax):
+    ax.axis("off")
+    # plt.gca().set_axis_off()
+    # plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
+    #                     hspace = 0, wspace = 0)
+    plt.margins(0,0)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    plt.tight_layout(pad=0)
+    # fig.axes.get_xaxis().set_visible(False)
+    # fig.axes.get_yaxis().set_visible(False)
+    canvas = fig.canvas
+    canvas.draw()
+    width, height = fig.get_size_inches() * fig.get_dpi()
+    img = np.fromstring(canvas.tostring_rgb(), dtype='uint8')\
+            .reshape(int(height), int(width), 3)
+    plt.close("all")
+    img = th.from_numpy(img)
+    img = rearrange(img,'h w c -> c h w')
+    return img
+
+def im_plot(img,dpi):
+    img = rearrange(img.cpu(),'c h w -> h w c')
+    img = (img*255.).type(th.uint8)
+    print(img.shape)
+    fig,ax=plt.subplots(1,1,figsize=(3,3),
+                        dpi=dpi,tight_layout=True)
+    ax.set_position([0, 0, 1, 1]) # Critical!
+    fig.subplots_adjust(top=1.0, bottom=0, right=1.0, left=0, hspace=0, wspace=0)
+    the_image = ax.imshow(
+        img,zorder=0,alpha=1.0,
+        origin="upper",
+        interpolation="nearest",
+    )
+    return fig,ax
+
+
+def fit_gauss2d(boxes):
+    data = boxes.reshape(-1,2)*1.
+    means = th.mean(data,0)
+
+    cov_00 = th.std(data[...,0])**2
+    cov_11 = th.std(data[...,1])**2
+    # cov_00_cp = th.mean((means[0] - data[:,0]) * (means[0] - data[:,0]))
+    cov_01 = th.mean((means[0] - data[:,0]) * (means[1] - data[:,1]))
+    cov = th.tensor([[cov_11,cov_01],[cov_01,cov_00]])
+    means = means.flip(0)
+
+
+    return means,cov
 
 def run_exps(cfg,dcfg):
 
@@ -295,7 +472,7 @@ def run_exps(cfg,dcfg):
 
 def nicer_image(img):
     print(img.shape)
-    img = TF.resize(img[0],(128,128),InterpolationMode.NEAREST)[None,:]
+    img = TF.resize(img[0],(512,512),InterpolationMode.NEAREST)[None,:]
     return img
 
 def main():
@@ -305,27 +482,30 @@ def main():
     fend = fstart + nf - 1 + (bs-1)
     fn = "/home/gauenk/Documents/data/davis/DAVIS/ImageSets/2017/train-val.txt"
     vid_names = np.loadtxt(fn,str)
-    vid_names = ["color-run"]
-    vid_names = ["kid-football"]
-    # vid_names = ["sunflower"]
+    # vid_names = ["color-run"]
+    # vid_names = ["kid-football"]
+    # dname,dset = "davis","tr"
+    vid_names = ["sunflower"]
+    dname,dset = "set8","val"
     for vid_name in vid_names:
         # sH,sW,sSize = 192,300,64
         sH,sW,sSize = 18,8,170
+        # sH,sW,sSize = 10,10,128
 
-        dcfg = edict({"dname":"davis","dset":"tr","vid_name":vid_name,"sigma":10.,
+        dcfg = edict({"dname":dname,"dset":dset,"vid_name":vid_name,"sigma":0.,
                       "nframes":nf,"frame_start":fstart,"frame_end":fend,
                       "isize":"512_512","seed":123,"sH":sH,"sW":sW,"sSize":sSize})
-        ps = 3
-        ws = 11
+        ps = 7
+        ws = 9
         s1 = 0.5
-        cfgs = [edict({"name":"stnls","ps":7,"ws":41,"full_ws":False,
+        cfgs = [edict({"name":"stnls","ps":ps,"ws":41,"full_ws":False,
                        "wt":1,"k":-1,"stride0":1,"stride1":1.,"flow":True}),
                 # edict({"name":"stnls","ps":ps,"ws":ws,"full_ws":False,
                 #        "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":True})
         ]
         for cfg in cfgs:
-            results = run_exps(cfg,dcfg)
-            # results = show_groups(cfg,dcfg)
+            # results = run_exps(cfg,dcfg)
+            results = show_groups(cfg,dcfg)
 
 if __name__ == "__main__":
     main()

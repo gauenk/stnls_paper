@@ -151,11 +151,10 @@ def get_offsets(cfg,nvid,vid,flows):
     # print(inds[0,1,50:52,80:82,1,0])
     # print(inds[0,1,50:52,80:82,1,1:])
     # print("-"*20)
-    ki = 1
+    ki = cfg.ki
     dists = dists[0,1,:,:,ki]
     inds = inds[0,1,...,ki,1:]
     B = dists.shape[0]
-
 
     # -- create offsets --
     offs = rearrange(inds,'h w tw -> tw h w')
@@ -225,23 +224,23 @@ def run_exps(cfg,dcfg):
 
 
     # -- get sims --
+    cfg.ki = dcfg.ki
     off_norm = get_offsets(cfg,nvid,vid,flows)
     cfg.ws = 1
     off_flow = get_offsets(cfg,nvid,vid,flows)
-    cfg.ws = 35
+    cfg.ws = 51
     cfg.stride1 = 1
     off_big = get_offsets(cfg,nvid,vid,flows)
 
     # -- across pixels --
-    ti = 0
     # zstrip = th.zeros_like(vid[0,0,:,:,:2])
     # stack = th.cat([vid[0,1],zstrip,vid[0,0]],-1).cpu()
     # stack = rearrange(stack,'c h w -> h w c')
 
     # plt.colorbar(the_image)
-    cols = ['b','k']#,'b']
+    cols = ['k','#FFC000','b',]#,'b']
     off_list = [off_big,off_flow]
-    s = 1.
+    s = 40.
     skip = 2
     sH,sW,sSize = dcfg.ssH,dcfg.ssW,dcfg.ssSize
     # sH,sW,sSize = 22,25,10
@@ -254,13 +253,17 @@ def run_exps(cfg,dcfg):
     Y, X = np.mgrid[sH:eH:skip,sW:eW:skip]
     Y = th.from_numpy(Y)
     X = th.from_numpy(X)
-    dX_big = off_big[sH:eH:skip,sW:eW:skip,1].cpu()
-    dY_big = off_big[sH:eH:skip,sW:eW:skip,0].cpu()
+    dX_big = off_norm[sH:eH:skip,sW:eW:skip,1].cpu()
+    dY_big = off_norm[sH:eH:skip,sW:eW:skip,0].cpu()
     dX_flow = off_flow[sH:eH:skip,sW:eW:skip,1].cpu()
     dY_flow = off_flow[sH:eH:skip,sW:eW:skip,0].cpu()
 
+    # -- frames --
+    ti = 1
+    tj = ti+1 if cfg.ki == 0 else ti-1
+
     # -- plot reference --
-    fig,ax = im_plot(dcfg,vid[0,1])
+    fig,ax = im_plot(dcfg,vid[0,ti])
     col = cols[0]
     A = X
     B = Y
@@ -268,14 +271,14 @@ def run_exps(cfg,dcfg):
     ref = get_plt_image(fig,ax)
 
     # -- plot flow + correction --
-    fig,ax = im_plot(dcfg,vid[0,0])
-    col = cols[0]
+    fig,ax = im_plot(dcfg,vid[0,tj])
+    col = cols[1]
     A = X+dX_flow
     B = Y+dY_flow
     plot_grid(ax,A,B,col,s)
 
 
-    col = cols[1]
+    col = cols[2]
     A = X+dX_big
     B = Y+dY_big
     plot_grid(ax,A,B,col,s)
@@ -296,20 +299,25 @@ def main():
     fend = fstart + nf - 1 + (bs-1)
     fn = "/home/gauenk/Documents/data/davis/DAVIS/ImageSets/2017/train-val.txt"
     vid_names = np.loadtxt(fn,str)
-    vid_names = ["color-run:207-303-40:22-25-10",
-                 "kid-football:18-8-170:22-25-10"]
+    vid_names = ["color-run:1:215-308-32:13-21-10",
+                 "kid-football:0:60-90-32:12-18-10",
+                 "scooter-gray:1:84-178-48:10-36-10",
+                 "stroller:0:145-94-48:15-25-10",
+                 # "tuk-tuk:1:64-240-64:0-0-10"
+                 ]
     vid = []
     # vid_names = ["tennis:207-303-40"]
     for vid_info in vid_names:
         # sH,sW,sSize = 207,303,40
         info = vid_info.split(":")
         vid_name = info[0]
-        sH,sW,sSize = [int(x) for x in info[1].split("-")]
-        ssH,ssW,ssSize = [int(x) for x in info[2].split("-")]
+        ki = int(info[1])
+        sH,sW,sSize = [int(x) for x in info[2].split("-")]
+        ssH,ssW,ssSize = [int(x) for x in info[3].split("-")]
         dcfg = edict({"dname":"davis","dset":"tr","vid_name":vid_name,"sigma":15.,
                       "nframes":nf,"frame_start":fstart,"frame_end":fend,
                       "isize":"512_512","seed":123,"sH":sH,"sW":sW,"sSize":sSize,
-                      "ssH":ssH,"ssW":ssW,"ssSize":ssSize,"dpi":100})
+                      "ssH":ssH,"ssW":ssW,"ssSize":ssSize,"dpi":100,"ki":ki})
         ps = 7
         ws = 9
         s1 = 1.
@@ -322,9 +330,9 @@ def main():
             ref,adj = run_exps(cfg,dcfg)
             # results = show_groups(cfg,dcfg)
             vid.append(th.stack([ref,adj]))
-    vid = rearrange(th.stack(vid),'b two c h w -> (b two) c h w')
+    vid = rearrange(th.stack(vid),'b two c h w -> (two b) c h w')
     print(vid.shape)
-    grid = make_grid(vid,nrow=vid.shape[0],pad_value=0.,padding=1)
+    grid = make_grid(vid,nrow=vid.shape[0]//2,pad_value=0.,padding=1)
     grid = grid/255.
     save_image(grid,"flow_error_v2.png")
 
