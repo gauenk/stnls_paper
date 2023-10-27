@@ -29,7 +29,7 @@ def main():
     def clear_fxn(num,cfg): return False
     exps,uuids = cache_io.train_stages.run("exps/trte_rvrt/train.cfg",
                                            ".cache_io_exps/trte_rvrt/train/",
-                                           update=False)
+                                           update=True)
     print(len(exps))
     print(uuids)
 

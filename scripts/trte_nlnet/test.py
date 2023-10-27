@@ -39,6 +39,8 @@ def main():
     exps,uuids = cache_io.get_uuids(exps,".cache_io/trte_nlnet/test",
                                     no_config_check=False,update=refresh)
     print("len(exps): ",len(exps))
+    # print([e.wt for e in exps if e.vid_name == "sunflower"])
+
 
     # -- run exps --
     results = cache_io.run_exps(exps,test.run,uuids=uuids,#preset_uuids=True,
