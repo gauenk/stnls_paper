@@ -44,21 +44,19 @@ def run_exps(cfg,dcfg):
     search = stnls.search.NonLocalSearch(cfg.ws,cfg.wt,cfg.ps,cfg.k,
                                          nheads=1,dist_type="l2",
                                          stride0=cfg.stride0,
-                                         anchor_self=True,use_adj=False,
-                                         full_ws=cfg.full_ws)
+                                         self_action=None,
+                                         full_ws=cfg.full_ws,itype="float")
     search_p = stnls.search.PairedSearch(cfg.ws,cfg.ps,cfg.k,
                                          nheads=1,dist_type="l2",
                                          stride0=cfg.stride0,
                                          stride1=cfg.stride1,
-                                         anchor_self=False,use_adj=False,
-                                         full_ws=cfg.full_ws,
-                                         full_ws_time=cfg.full_ws,
-                                         itype_fwd="float",itype_bwd="float")
-    stacking = stnls.tile.NonLocalStack(1,cfg.stride0,
-                                        itype_fwd="float",itype_bwd="float")
+                                         self_action=None,
+                                         full_ws=cfg.full_ws,itype="float")
+    stacking = stnls.agg.NonLocalGather(cfg.ps,cfg.stride0,itype="float")
     flows = flow.orun(nvid,cfg.flow,ftype="cv2")
-    acc_flows = stnls.nn.accumulate_flow(flows.fflow,flows.bflow)
-    dists,inds = search_p.paired_vids(nvid,nvid,acc_flows,cfg.wt,skip_self=True)
+    # acc_flows = stnls.nn.accumulate_flow(flows.fflow,flows.bflow)
+    flows = stnls.nn.search_flow(flows.fflow,flows.bflow,cfg.wt,cfg.stride0)
+    dists,inds = search_p.paired_vids(nvid,nvid,flows,cfg.wt,skip_self=True)
     ones = th.ones_like(dists)
     # M = inds.shape[2]//2
     # print(inds[0,0,M,...,0])
@@ -100,7 +98,7 @@ def run_exps(cfg,dcfg):
     prop = ensure_size(vid[0,pi],tH,tW)
     aligned = ensure_size(stack[0,cfg.ai,cfg.ti],tH,tW)
 
-    psnrs_aligned = -20*th.log10(th.mean((ref-aligned)**2)).item()
+    psnrs_aligned = -10*th.log10(th.mean((ref-aligned)**2)).item()
     psnrs = th.tensor([psnrs_aligned])
 
     # # vid_io.save_video(stack[:,:,ti],root,"align",itype="png")
@@ -175,8 +173,8 @@ def increase_brightness(img, value=30):
 
 def run_grid(dcfg,vid_names):
     ps = 3
-    ws = 11
-    s1 = 0.5
+    ws = 9
+    s1 = 1
     grid = []
     psnrs = []
     for vid_name in vid_names:
@@ -188,19 +186,27 @@ def run_grid(dcfg,vid_names):
             sH,eH,sW,eW = [int(s) for s in vinfo[2].split("-")]
         else:
             sH,eH,sW,eW = 0,512,0,512
-        cfgs = [edict({"name":"stnls","ps":ps,"ws":ws,"full_ws":False,
+        cfgs = [edict({"name":"stnls","ps":1,"ws":ws,"full_ws":False,
                        "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":False,
                        "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW}),
                 edict({"name":"stnls","ps":1,"ws":1,"full_ws":False,
                        "wt":1,"k":1,"stride0":1,"stride1":.1,"flow":True,
                        "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW}),
+                edict({"name":"stnls","ps":1,"ws":ws,"full_ws":False,
+                       "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":True,
+                       "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW}),
                 edict({"name":"stnls","ps":ps,"ws":ws,"full_ws":False,
                        "wt":1,"k":1,"stride0":1,"stride1":s1,"flow":True,
-                       "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW})]
+                       "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW}),
+                edict({"name":"stnls","ps":ps,"ws":ws,"full_ws":False,
+                       "wt":1,"k":1,"stride0":2,"stride1":s1,"flow":True,
+                       "ti":1,"ai":align_index,"sH":sH,"eH":eH,"sW":sW,"eW":eW})
+        ]
 
         sims,psnrs_v = [],[]
         for cfg in cfgs:
             ref,prop,aligned,psnr = run_exps(cfg,dcfg)
+            print(cfg.flow,cfg.ws,cfg.ps,psnr)
             sims.append(aligned)
             psnrs_v.append(psnr)
         vstack = th.stack(sims+[ref,prop,])
@@ -271,17 +277,17 @@ def main():
     #              "hockey:0:64-192-224-352",]
     # vid_names = best_names
     vid_names = ["color-run:0:192-256-300-364",
-                 "kid-football:0:18-176-8-170",
+                 # "kid-football:0:18-176-8-170",
                  "tennis:0:96-292-96-292",
                  "scooter-gray:1:44-158-160-274",
-                 # "swing:0:106-198-218-314",
-                 # "tennis:0:96-292-96-292",
-                 "lindy-hop:0:74-174-340-440",
-                 "walking:1:192-320-128-256",
-                 # "scooter-board:1:112-256-220-362",
-                 "stroller:0:138-266-74-202",
-                 # "dog-gooses:0:80-176-128-224",
-                 "tractor-sand:0:128-292-128-292",
+                 # # "swing:0:106-198-218-314",
+                 # # "tennis:0:96-292-96-292",
+                 # "lindy-hop:0:74-174-340-440",
+                 # "walking:1:192-320-128-256",
+                 # # "scooter-board:1:112-256-220-362",
+                 # "stroller:0:138-266-74-202",
+                 # # "dog-gooses:0:80-176-128-224",
+                 # "tractor-sand:0:128-292-128-292",
     ]
     fstart = 0
     fend = fstart + 5 - 1
@@ -290,11 +296,29 @@ def main():
                   "isize":"512_512","seed":123})
     grid,psnrs = run_grid(dcfg,vid_names)
     print(grid.shape)
-    nrow = grid.shape[0]
-    grid = grid.transpose(0,1).flatten(0,1)
+    # nrow = grid.shape[0]
+    # grid = grid.transpose(0,1).flatten(0,1)
+
+    nrow = grid.shape[1]
+    grid = grid.flatten(0,1)
+
     print(grid.shape)
     grid = make_grid(grid,nrow=nrow)
-    save_image(grid,'grid_a.png')
+    print(grid.shape)
+    # save_image(grid,'grid_a.png')
+    # save_image(grid,'align_grid.png')
+    G = grid.shape[-1]//7
+    # save_image(grid[...,:G,:],'align_grid_a.png')
+    # save_image(grid[...,G:,:],'align_grid_b.png')
+    save_image(grid[...,:,:2*G],'align_grid_a.png')
+    save_image(grid[...,:,2*G:5*G],'align_grid_b.png')
+    save_image(grid[...,:,5*G:],'align_grid_c.png')
+
+    # G = grid.shape[-1]//2
+    # save_image(grid[...,:G],'align_grid_a.png')
+    # save_image(grid[...,G:],'align_grid_b.png')
+
+
 
 if __name__ == "__main__":
     main()

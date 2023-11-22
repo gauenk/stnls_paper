@@ -76,8 +76,8 @@ def run_exps(cfg,dcfg):
                                              full_ws=cfg.full_ws,
                                              full_ws_time=cfg.full_ws,
                                              itype_fwd="float",itype_bwd="float")
-        stacking = stnls.tile.NonLocalStack(cfg.ps_stack,cfg.stride0,
-                                            itype_fwd="float",itype_bwd="float")
+        stacking = stnls.tile.NonLocalGather(cfg.ps_stack,cfg.stride0,
+                                            itype="float")
         flows = flow.orun(nvid,cfg.flow,ftype="cv2")
         print(th.mean(flows.fflow**2).item(),th.mean(flows.bflow**2).item())
         # dists,inds = search(nvid,nvid,flows.fflow,flows.bflow)

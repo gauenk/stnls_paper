@@ -34,7 +34,6 @@ def main():
     exps,uuids = cache_io.train_stages.run("exps/trte_f2f/train.cfg",
                                            ".cache_io_exps/trte_f2f/train/",
                                            update=True)
-
     print(exps[0])
     print(len(exps))
     def clear_fxn(num,cfg): return True
@@ -44,7 +43,7 @@ def main():
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_f2f/train.pkl",
                                 records_reload=False,use_wandb=True,
-                                proj_name="neurips_f2f")
+                                proj_name="train_f2f")
     # -- view --
     print(len(results))
     if len(results) == 0: return
