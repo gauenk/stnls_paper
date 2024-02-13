@@ -5,9 +5,9 @@
 remoteHost=github
 remoteUser=gauenk
 remoteDir="~/repositories/"
-remoteRepos=(dev_basics cache_io dev_basics data_hub n3net colanet lidia mvit frame2frame stnls detectron2 nlnet vrt)
+#remoteRepos=(dev_basics cache_io dev_basics data_hub n3net colanet lidia mvit frame2frame stnls detectron2 nlnet vrt)
+remoteRepos=(stnls dev_basics cache_io dev_basics data_hub n3net nlnet rvrt)
 localCodeDir="$HOME/Documents/packages/"
-
 
 # if no output from the remote ssh cmd, bail out
 if [ -z "$remoteRepos" ]; then
@@ -22,10 +22,11 @@ for gitRepo in ${remoteRepos[@]}
 do
   localRepoDir=$(echo ${localCodeDir}${gitRepo}|cut -d'.' -f1)
   # echo $localRepoDir
-  if [ -d $localRepoDir ]; then 	
+  if [ -d $localRepoDir ]; then
 		echo -e "Directory $localRepoDir already exits, skipping ...\n"
 	else
-		cloneCmd="git clone git@github.com:$remoteUser/$gitRepo.git $localRepoDir"
+		cloneCmd="git clone https://github.com/gauenk/$gitRepo.git $localRepoDir"
+		#cloneCmd="git clone git@github.com:$remoteUser/$gitRepo.git $localRepoDir"
 		# cloneCmdRun=$($cloneCmd 2>&1)
 		# echo -e "Running: \n$ $cloneCmd"
 		echo -e "${cloneCmd}"
