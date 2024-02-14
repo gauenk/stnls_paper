@@ -7,7 +7,8 @@ remoteUser=gauenk
 remoteDir="~/repositories/"
 #remoteRepos=(dev_basics cache_io dev_basics data_hub n3net colanet lidia mvit frame2frame stnls detectron2 nlnet vrt)
 remoteRepos=(stnls dev_basics cache_io dev_basics data_hub n3net nlnet rvrt)
-localCodeDir="$HOME/Documents/packages/"
+# localCodeDir="$HOME/Documents/packages/"
+localCodeDir="$HOME/"
 
 # if no output from the remote ssh cmd, bail out
 if [ -z "$remoteRepos" ]; then
