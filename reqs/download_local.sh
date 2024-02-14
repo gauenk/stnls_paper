@@ -5,8 +5,8 @@
 remoteHost=github
 remoteUser=gauenk
 remoteDir="~/repositories/"
-#remoteRepos=(dev_basics cache_io dev_basics data_hub n3net colanet lidia mvit frame2frame stnls detectron2 nlnet vrt)
-remoteRepos=(stnls dev_basics cache_io dev_basics data_hub n3net nlnet rvrt)
+#remoteRepos=(dev_basics cache_io data_hub n3net colanet lidia mvit frame2frame stnls detectron2 nlnet vrt)
+remoteRepos=(stnls dev_basics cache_io data_hub nlnet rvrt)
 # localCodeDir="$HOME/Documents/packages/"
 localCodeDir="$HOME/"
 

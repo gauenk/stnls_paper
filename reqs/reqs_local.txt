@@ -2,13 +2,14 @@
 -e ../cache_io
 -e ../dev_basics
 -e ../data_hub
--e ../n3net
--e ../colanet
--e ../lidia
--e ../mvit
--e ../frame2frame
 -e ../stnls
--e ../detectron2
 -e ../nlnet
--e ../vrt
+-e ../rvrt
 -e .
+#-e ../n3net
+# -e ../colanet
+# -e ../lidia
+# -e ../mvit
+# -e ../frame2frame
+# -e ../detectron2
+# -e ../vrt
