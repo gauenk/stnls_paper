@@ -24,5 +24,7 @@ joblib
 pyyaml
 timm
 cityscapesscripts
-torchinfo
+#torchinfo
 git+https://github.com/saadnaeem-dev/pytorch-linear-warmup-cosine-annealing-warm-restarts-weight-decay
+opencv-python
+wandb
