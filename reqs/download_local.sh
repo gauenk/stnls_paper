@@ -27,7 +27,7 @@ do
 	else
 		cloneCmd="git clone https://github.com/gauenk/$gitRepo.git $localRepoDir"
 		#cloneCmd="git clone git@github.com:$remoteUser/$gitRepo.git $localRepoDir"
-		# cloneCmdRun=$($cloneCmd 2>&1)
+		cloneCmdRun=$($cloneCmd 2>&1)
 		# echo -e "Running: \n$ $cloneCmd"
 		echo -e "${cloneCmd}"
 	fi
