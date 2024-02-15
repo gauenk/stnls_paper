@@ -27,9 +27,11 @@ def main():
 
     # -- get/run experiments --
     def clear_fxn(num,cfg): return False
-    exps,uuids = cache_io.train_stages.run("exps/trte_rvrt/train.cfg",
-                                           ".cache_io_exps/trte_rvrt/train/",
-                                           update=False)
+    fn = "exps/trte_rvrt/train.cfg"
+    cache_fn = ".cache_io_exps/trte_rvrt/train/"
+    fn = "exps/trte_rvrt/train_hooks.cfg"
+    cache_fn = ".cache_io_exps/trte_rvrt/train_hooks/"
+    exps,uuids = cache_io.train_stages.run(fn, cache_fn, update=True)
     print(len(exps))
     print(uuids)
 
@@ -40,7 +42,8 @@ def main():
                                 version="v1",skip_loop=False,clear_fxn=clear_fxn,
                                 clear=False,enable_dispatch="slurm",
                                 records_fn=".cache_io_pkl/trte_rvrt/train.pkl",
-                                records_reload=True,proj_name="rvrt_train")
+                                records_reload=True,proj_name="rvrt_train",
+                                use_wandb=False)
 
 
 if __name__ == "__main__":
