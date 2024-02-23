@@ -25,7 +25,8 @@ import matplotlib.image as mpimg
 from matplotlib.patches import Ellipse
 
 # -- pairing --
-from stnls.pytorch.search.paired_utils import paired_vids
+# from stnls.search.paired_utils import paired_vids
+from stnls.search.utils import paired_vids
 
 # -- bench --
 from dev_basics.utils.timer import ExpTimer,TimeIt
@@ -45,13 +46,16 @@ def get_data_example(dcfg):
     return vid,nvid
 
 def get_data_set(dcfg):
+    dcfg.rand_order = False
     data,loaders = data_hub.sets.load(dcfg)
     indices = data_hub.filter_subseq(data[dcfg.dset],dcfg.vid_name,
                                      dcfg.frame_start,dcfg.frame_end)
     device = "cuda:0"
-    nvid = data[dcfg.dset][indices[0]]['noisy'].to(device)/255.
+    # print(indices[0])
+    # print(data[dcfg.dset].groups[indices[0]])
     vid = data[dcfg.dset][indices[0]]['clean'].to(device)/255.
-    # print(th.mean((nvid-vid)**2).item())
+    nvid = data[dcfg.dset][indices[0]]['noisy'].to(device)/255.
+    # print(th.mean((nvid-vid)**2).sqrt()*255.)
     return vid,nvid
 
 def run_natten(nvid,acc_flows,k,ws,wt):
@@ -83,28 +87,36 @@ def run_exps(cfg,dcfg):
     vid,nvid = get_data(dcfg)
     vid = vid[None,:].contiguous()
     nvid = nvid[None,:].contiguous()
+    # print("vid.shape: ",vid.shape)
+    # print(vid.max(),nvid.max())
+    # psnrs = compute_psnrs(vid,nvid,div=1.)
+    # print("psnrs: ",psnrs)
 
     # -- get sims --
+    # print(cfg.ws,cfg.ps,cfg.k,cfg.ps_stack,cfg.stride0)
     search = stnls.search.NonLocalSearch(cfg.ws,cfg.wt,cfg.ps,cfg.k,
                                          nheads=1,dist_type="l2",
                                          stride0=cfg.stride0,
-                                         anchor_self=True,use_adj=False,
-                                         full_ws=cfg.full_ws)
+                                         self_action="remove",
+                                         use_adj=False,full_ws=cfg.full_ws)
     search_p = stnls.search.PairedSearch(cfg.ws,cfg.ps,cfg.k,
                                          nheads=1,dist_type="l2",
                                          stride0=cfg.stride0,
                                          stride1=cfg.stride1,
-                                         anchor_self=False,use_adj=False,
-                                         full_ws=cfg.full_ws,
-                                         full_ws_time=cfg.full_ws,
-                                         itype_fwd="float",itype_bwd="float")
-    stacking = stnls.tile.NonLocalStack(cfg.ps_stack,cfg.stride0,
-                                        itype_fwd="float",itype_bwd="float")
+                                         self_action=None,use_adj=False,
+                                         full_ws=cfg.full_ws,itype="float")
+    # print("cfg.k: ",cfg.k)
+    # print("vid.shape: ",vid.shape)
+    # print(vid[0,:,0,:2,:2])
+    stacking = stnls.agg.NonLocalGather(cfg.ps_stack,cfg.stride0,itype="float")
     with TimeIt(timer,'flow'):
         with MemIt(memer,'flow'):
             flows = flow.orun(nvid,cfg.flow,ftype="cv2")
     flow_norm = (flows.fflow.abs().mean() + flows.bflow.abs().mean()).item()/2.
-    acc_flows = stnls.nn.accumulate_flow(flows.fflow,flows.bflow)
+    # acc_flows = stnls.nn.accumulate_flow(flows.fflow,flows.bflow)
+    acc_flows = stnls.nn.search_flow(flows.fflow,flows.bflow,cfg.wt,cfg.stride0)
+    # print(acc_flows.shape)
+    # print(acc_flows)
     with TimeIt(timer,'search'):
         with MemIt(memer,'search'):
             # if stype == "nat":
@@ -113,13 +125,17 @@ def run_exps(cfg,dcfg):
             dists,inds = run_stnls(search_p,nvid,acc_flows,cfg.wt)
             # dists,inds = search_p.paired_vids(nvid,nvid,acc_flows,cfg.wt,skip_self=True)
     ones = th.ones_like(dists)
+    # print(inds[0,0,1])
     stack = stacking(vid,ones,inds)[:,0]
-    vid = vid[:,None].repeat(1,2,1,1,1,1)
+    # print("stack.shape: ",stack.shape)
 
     # -- compute sims --
-    stack = rearrange(stack,'b k t c h w -> b (k t) c h w')
+    vid = vid[:,None].repeat(1,2,1,1,1,1)
     vid = rearrange(vid,'b k t c h w -> b (k t) c h w')
-    psnrs = compute_psnrs(stack,vid).mean().item()
+    stack = rearrange(stack,'b k t c h w -> b (k t) c h w')
+    psnrs = compute_psnrs(stack,vid)
+    print(psnrs)
+    # psnrs = compute_psnrs(stack,vid).mean().item()
     alloc = memer['search']['alloc']
     res = memer['search']['res']
 
@@ -143,23 +159,24 @@ def run_it():
         print(vid_name)
         fstart = 0
         fend = fstart + 10 - 1
-        dcfg = edict({"dname":dname,"dset":dset,"vid_name":vid_name,"sigma":10.,
+        dcfg = edict({"dname":dname,"dset":dset,"vid_name":vid_name,"sigma":15.,
                       "nframes":5,"frame_start":fstart,"frame_end":fend,
                       "isize":None,"seed":123})
         ps = 3
         ps_stack = 3
         ws = 11
-        s0 = 2
+        s0 = 1
         s1 = 1
-        ws_grid = [1,3,9,15,21,27,33]
+        # ws_grid = [1,3,9,15,21,27,33]
+        ws_grid = [1,3,11,15,21,27,33]
         cfgs = []
-        for ws in ws_grid:
-            # if ws <= 13: ps_i = ws
-            # else: ps_i = ps
-            ps_i = ps
-            cfgs.append(edict({"name":"stnls","ps":ps_i,"ps_stack":ps_stack,
-                               "ws":ws,"full_ws":False,
-                               "wt":1,"k":1,"stride0":s0,"stride1":s1,"flow":False}))
+        # for ws in ws_grid:
+        #     # if ws <= 13: ps_i = ws
+        #     # else: ps_i = ps
+        #     ps_i = ps
+        #     cfgs.append(edict({"name":"stnls","ps":ps_i,"ps_stack":ps_stack,
+        #                        "ws":ws,"full_ws":False,
+        #                        "wt":1,"k":1,"stride0":s0,"stride1":s1,"flow":False}))
         for ws in ws_grid:
             cfgs.append(edict({"name":"stnls","ps":ps,"ps_stack":ps_stack,
                                "ws":ws,"full_ws":False,
@@ -178,6 +195,7 @@ def run_it():
         #                "wt":1,"k":1,"stride0":s0,"stride1":s1,"flow":True})
         # ]
         for cfg in cfgs:
+            print("ws: ",cfg.ws)
             psnr,flow_norm,ftime,time,alloc,res = run_exps(cfg,dcfg)
             info['psnrs'].append(psnr)
             info['flow_norm'].append(flow_norm)
@@ -308,7 +326,8 @@ def compare_align_motion(df):
 
 
 def main():
-    cache = cache_io.FileCache(".cache_io/alignment/")
+    cache = cache_io.FileCache(".cache_io/alignment_s15/")
+    # cache = cache_io.FileCache(".cache_io/alignment/")
     overwrite = False
     info = cache.read("compare_align")
     if info is None or overwrite:

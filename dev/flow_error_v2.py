@@ -119,30 +119,33 @@ def get_offsets(cfg,nvid,vid,flows):
     search = stnls.search.NonLocalSearch(cfg.ws,cfg.wt,cfg.ps,cfg.k,
                                          nheads=1,dist_type="l2",
                                          stride0=cfg.stride0,
-                                         anchor_self=True,use_adj=False,
+                                         self_action='anchor',
+                                         use_adj=False,
                                          full_ws=cfg.full_ws)
     search_p = stnls.search.PairedSearch(cfg.ws,cfg.ps,cfg.k,
                                          nheads=1,dist_type="l2",
                                          stride0=cfg.stride0,
                                          stride1=cfg.stride1,
-                                         anchor_self=False,use_adj=False,
+                                         self_action=None,
+                                         use_adj=False,
                                          full_ws=cfg.full_ws,
-                                         full_ws_time=cfg.full_ws,
-                                         itype_fwd="float",itype_bwd="float")
-    stacking = stnls.tile.NonLocalStack(1,cfg.stride0,
-                                        itype_fwd="float",itype_bwd="float")
+                                         # full_ws_time=cfg.full_ws,
+                                         itype="float")
+    stacking = stnls.agg.NonLocalGather(1,cfg.stride0,itype="float")
     # print(th.mean(flows.fflow**2).item(),th.mean(flows.bflow**2).item())
     # dists,inds = search(nvid,nvid,flows.fflow,flows.bflow)
-    acc_flows = stnls.nn.accumulate_flow(flows.fflow,flows.bflow)
+    # acc_flows = stnls.nn.accumulate_flow(flows.fflow,flows.bflow)
+    flows = stnls.nn.search_flow(flows.fflow,flows.bflow,cfg.wt,cfg.stride0)
     th.cuda.synchronize()
-    dists,inds = search_p.paired_vids(nvid,nvid,acc_flows,cfg.wt,skip_self=True)
+    dists,inds = search_p.paired_vids(nvid,nvid,flows,cfg.wt,skip_self=True)
     dists = th.exp(-10.*dists)
     dists /= th.sum(dists,-1,keepdim=True)
-    del acc_flows
+    # del acc_flows
     stride1 = cfg.stride1
 
-    dists = rearrange(dists,'b 1 (t h w) k -> b t h w k',h=H,w=W)
-    inds = rearrange(inds,'b 1 (t h w) k tr -> b t h w k tr',h=H,w=W)
+    # print(dists.shape)
+    dists = rearrange(dists,'b 1 t h w k -> b t h w k',h=H,w=W)
+    inds = rearrange(inds,'b 1 t h w k tr -> b t h w k tr',h=H,w=W)
     # inds = rearrange(inds,'b t h w (wt wh ww) tr -> b t h w wt wh ww tr',
     #                  wh=cfg.ws,ww=cfg.ws)
     # print(inds[0,1,0,0])
@@ -158,7 +161,7 @@ def get_offsets(cfg,nvid,vid,flows):
 
     # -- create offsets --
     offs = rearrange(inds,'h w tw -> tw h w')
-    offs = offs-get_grid(H,W,th.float32,inds.device)
+    # offs = offs-get_grid(H,W,th.float32,inds.device)
     offs = rearrange(offs,'tr h w -> h w tr')
     return offs
 
@@ -238,7 +241,7 @@ def run_exps(cfg,dcfg):
     # stack = rearrange(stack,'c h w -> h w c')
 
     # plt.colorbar(the_image)
-    cols = ['k','#FFC000','b',]#,'b']
+    cols = ['red','orange','b',]#,'b']
     off_list = [off_big,off_flow]
     s = 40.
     skip = 2
@@ -299,10 +302,23 @@ def main():
     fend = fstart + nf - 1 + (bs-1)
     fn = "/home/gauenk/Documents/data/davis/DAVIS/ImageSets/2017/train-val.txt"
     vid_names = np.loadtxt(fn,str)
-    vid_names = ["color-run:1:215-308-32:13-21-10",
-                 "kid-football:0:60-90-32:12-18-10",
-                 "scooter-gray:1:84-178-48:10-36-10",
-                 "stroller:0:145-94-48:15-25-10",
+    vid_names = [#"color-run:1:215-308-32:13-21-10",
+        # "walking:1:192-128-32:12-18-10",
+        # "scooter-board:1:112-256-220-362",
+        # "scooter-gray:1:64-192-160-288",
+        # "swing:0:96-292-192-388",
+        #
+        "scooter-board:1:130-270-48:20-30-10",
+        "stroller:0:145-94-48:15-25-10",
+        "hockey:0:60-230-48:30-30-10",
+        "scooter-gray:1:84-178-48:10-36-10",
+        #
+        #
+        # "swing:0:100-200-128:10-10-10",
+        # "drone:0:230-200-48:12-18-10",
+        # "color-run:1:215-308-32:13-21-10",
+        # "kid-football:0:50-90-48:8-8-10",
+        #
                  # "tuk-tuk:1:64-240-64:0-0-10"
                  ]
     vid = []

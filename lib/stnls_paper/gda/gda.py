@@ -14,7 +14,7 @@ from stnls.search.utils import paired_vids as _paired_vids
 from einops import rearrange
 
 def load_model(cfg):
-    model = GdaForVideoAlignment()
+    model = GdaForVideoAlignment(attn_size=cfg.attn_size)
     return model
 
 class GdaForVideoAlignment(nn.Module):
@@ -39,7 +39,7 @@ class GdaForVideoAlignment(nn.Module):
         self.clip_size = 1
         self.attn_size = attn_size
         self.deformable_groups = deformable_groups
-        self.max_residue_magnitude = kwargs.pop('max_residue_magnitude', 10)
+        self.max_residue_magnitude = kwargs.pop('max_residue_magnitude', 0.01)
         self.fixed_offset_max = kwargs.pop('fixed_offset_max', 2.5)
 
         num_in = self.in_channels * (1 + self.clip_size) + self.clip_size * 2
@@ -62,15 +62,33 @@ class GdaForVideoAlignment(nn.Module):
         )
 
     def forward(self,frame0,frame1,flow):
-        warped_frame1 = flow_warp(frame1,flow[:,0])
+        # print("[gda] flow.shape: ",flow.shape)
+        warped_frame0 = flow_warp(frame0,flow[:,0])
         frame0,frame1 = frame0[:,None],frame1[:,None]
-        warped_frame1 = warped_frame1[:,None]
-        print(frame0.shape,frame1.shape,flow.shape,warped_frame1.shape)
-        flows_k = self.conv_offset(torch.cat([frame0,warped_frame1,flow], 2)\
+        warped_frame0 = warped_frame0[:,None]
+        flows_k = self.conv_offset(torch.cat([frame1,warped_frame0,flow], 2)\
                                .transpose(1, 2)).transpose(1, 2)
+        flows_k = self.max_residue_magnitude * torch.tanh(flows_k)
+
         HD = self.deformable_groups
+        assert HD == 1
         K = self.attn_size
-        flows_k = rearrange(flows_k,'b 1 (hd k tw) h w -> b hd h w k tw',hd=HD,k=K)
+        #flows_k = rearrange(flows_k,'b 1 (hd k tw) h w -> b hd k tw h w',hd=HD,k=K)
+        flows_k = rearrange(flows_k,'b 1 (k tw) h w -> b k tw h w',k=K)
+        K = flows_k.shape[-2]
+        # print("flows_k.shape,flow.shape: ",flows_k.shape,flow.shape)
+        # flows_k = flows_k + flow.flip(2).repeat(1,1,flow.size(2)//2,1,1)
+        flows_k = flows_k + flow
+        # print("flows_k.shape,flow.shape: ",flows_k.shape,flow.shape)
+
+        # exit()
+        # flows_k = rearrange(flows_k,'b k tw h w -> b 1 k (h w) tw')
+        # flows_k = rearrange(flows_k,'b k tw h w -> b 1 k tw h w')
+        flows_k = rearrange(flows_k,'b k tw h w -> b 1 h w k tw')
+
+        # print("flows_k.shape: ",flows_k.shape)
+        # exit()
+        # dists_k = th.zeros_like(flows_k[...,0,:,:])
         dists_k = th.zeros_like(flows_k[...,0])
         return dists_k,flows_k
 

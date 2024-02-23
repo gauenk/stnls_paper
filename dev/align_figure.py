@@ -9,7 +9,7 @@ from matplotlib.patches import Ellipse
 
 def main():
 
-    psnrs = np.array([75.4204225,  72.33091522, 78.66552541, 80.55617397])
+    psnrs = np.array([75.4204225,  72.33091522, 78.66552541, 80.55617397])/2.
     times = np.array([.09070,      0.02919,     0.4037,      4.542])
     mems = np.array([0.117,      0.047,     0.047,      0.047])
 

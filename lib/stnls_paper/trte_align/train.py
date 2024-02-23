@@ -26,7 +26,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import MultiStepLR, StepLR
 
+import stnls
 import data_hub
+from einops import rearrange
+import numpy as np
 
 from .align_model import AlignModel
 from .align_loss import AlignLoss
@@ -40,29 +43,40 @@ def extract_defaults(_cfg):
         # "heads":1,"M":0.,"use_local":False,"use_inter":False,
         # "use_intra":True,"use_ffn":False,"use_nat":False,"nat_ksize":9,
         # "affinity_softmax":1.,"topk":100,"intra_version":"v1",
-        # "align_type":"gda",
-        "align_type":"stnls",
-        "nepochs":10,
+        #
+        "align_type":"gda",
+        # "align_type":"stnls",
+        "nepochs":10,"attn_size":1,"ps_stack":3,
         "spynet_path":"./weights/spynet/spynet_sintel_final-3d2a1287.pth",
         "data_path":"./data/sr/","data_augment":False,
-        "patch_size":128,"data_repeat":1,"threads":4,
+        "patch_size":512,"data_repeat":1,"threads":4,
         "decays":[],"gamma":0.5,"lr":0.0002,"resume":None,
         "log_name":"default_log","exp_name":"default_exp","epochs":50,
-        "log_every":100,"test_every":1,"batch_size":8,
+        "log_every":10,"test_every":1,"batch_size":8,
         "log_path":"output/deno/train/","resume_uuid":None,"resume_flag":False}
     for k in defs: cfg[k] = optional(cfg,k,defs[k])
     return cfg
 
-def load_data(cfg):
+def load_data(_cfg):
     cfg = edict()
     cfg.seed = 123
     cfg.dname = "davis"
-    cfg.nframes = 3
-    cfg.isize = "512_512"
-    cfg.dset = "te"
-    cfg.sigma = 0.001
+    cfg.nframes = 5
+    cfg.sigma = _cfg.sigma
+    cfg.isize = _cfg.isize
+    # cfg.sigma = 0.001
     data,loaders = data_hub.sets.load(cfg)
-    return loaders.tr,loaders.val
+    cfg.rand_order_tr = False
+    _data,_loaders = data_hub.sets.load(cfg)
+    return loaders.tr,_data.tr,_loaders.tr
+
+def get_noisy(clean):
+    # sigma_min = 5
+    # sigma_max = 20
+    # sigma = sigma_max*torch.rand(1).item()+sigma_min
+    sigma = 15.
+    # print(sigma)
+    return clean + (sigma/255.) * th.randn_like(clean)
 
 def run(cfg):
 
@@ -73,61 +87,86 @@ def run(cfg):
     else: cfg.resume = None
     seed_everything(cfg.seed)
     device = torch.device('cuda')
+    cfg.device = device
     torch.set_num_threads(cfg.threads)
 
     ## create dataset for training and validating
-    train_dataloader, valid_dataloaders = load_data(cfg)
+    train_dataloader, valid_dataset, valid_dataloaders = load_data(cfg)
+    valid_dataloaders = [{"name":"davis","dataloader":valid_dataloaders}]
     tr_size = len(train_dataloader.dataset)
 
     ## definitions of model
     model = AlignModel(cfg,cfg.align_type,cfg.spynet_path)
+    print(model)
     model = nn.DataParallel(model).to(device)
 
     ## definition of loss and optimizer
-    loss_func = AlignLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
-    scheduler = MultiStepLR(optimizer, milestones=cfg.decays, gamma=cfg.gamma)
+    loss_func = AlignLoss(cfg)
+    if len(list(model.parameters())) > 0:
+        optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+        scheduler = MultiStepLR(optimizer, milestones=cfg.decays, gamma=cfg.gamma)
+    else:
+        optimizer = None
+        scheduler = None
 
     # -- resume --
-    stat_dict,start_epoch = init_logging(cfg,model,optimizer,scheduler)
+    stat_dict,start_epoch,chkpt_path,lpath = init_logging(cfg,model,optimizer,scheduler)
 
     ## start training
     timer_start = time.time()
+    nval = 5
+
+    # -- init validation --
+    run_validation(cfg,model,stat_dict,-1,chkpt_path,lpath,
+                   optimizer,scheduler,valid_dataset,valid_dataloaders,nval)
+
     for epoch in range(start_epoch, cfg.nepochs+1):
 
         # -- init epoch --
         epoch_loss = 0.0
         stat_dict['epochs'] = epoch
         model = model.train()
-        opt_lr = scheduler.get_last_lr()
+        opt_lr = -1 if scheduler is None else scheduler.get_last_lr()
         th.manual_seed(int(cfg.seed)+epoch)
-        print('##==========={}-training, Epoch: {}, lr: {} =============##'.format('fp32', epoch, opt_lr))
+        print('##==========={}-training, Epoch: {}, lr: {} =============##'\
+              .format('fp32', epoch, opt_lr))
 
         # -- run train --
-        for iter, batch in enumerate(train_dataloader):
-            vid = batch['clean']
-            print("vid.shape: ",vid.shape)
-            timer_start = run_batch(cfg,epoch_loss,vid,model,loss_func,
-                                    optimizer,tr_size,timer_start)
+        if not(optimizer is None):
+            for iter, batch in enumerate(train_dataloader):
+                vid = batch['clean'].to(device)/255.
+                timer_start = run_batch(cfg,epoch_loss,vid,model,loss_func,
+                                        optimizer,tr_size,
+                                        timer_start,iter,epoch,stat_dict)
+                # if iter > 30: break
 
         # -- run validation --
         if epoch % cfg.test_every == 0:
-            run_validation(cfg,model,stat_dict,valid_dataloaders)
+            run_validation(cfg,model,stat_dict,epoch,chkpt_path,lpath,
+                           optimizer,scheduler,valid_dataset,valid_dataloaders,nval)
 
         # -- update scheduler --
-        scheduler.step()
+        if not(scheduler is None):
+            scheduler.step()
 
     # -- return info --
     info = edict()
     for valid_dataloader in valid_dataloaders:
         name = valid_dataloader['name']
-        info["%s_best_align"%name] = stat_dict[name]['best_align']['value']
+        info["%s_best_psnr"%name] = stat_dict[name]['best_psnr']['value']
+        info["%s_best_ssim"%name] = stat_dict[name]['best_ssim']['value']
+    print(info)
+    exit()
     return info
 
-def run_batch(cfg,epoch_loss,vid,model,loss_func,optimizer,total_steps,timer_start):
+def run_batch(cfg,epoch_loss,vid,model,loss_func,optimizer,
+              total_steps,timer_start,iter,epoch,stat_dict):
     optimizer.zero_grad()
-    flow_k = model(vid)
+    noisy = get_noisy(vid)
+    flow_k = model(noisy)
+    # print("flow_k.shape: ",flow_k.shape)
     loss = loss_func(vid,flow_k)
+    # print(loss.item())
     loss.backward()
     optimizer.step()
     epoch_loss += float(loss)
@@ -145,36 +184,68 @@ def run_batch(cfg,epoch_loss,vid,model,loss_func,optimizer,total_steps,timer_sta
         timer_end = time.time()
         duration = timer_end - timer_start
         timer_start = timer_end
-        print('Epoch:{}, {}/{}, loss: {:.4f}, time: {:.3f}'.\
+        print('Epoch:{}, {}/{}, loss: {:.8f}, time: {:.3f}'.\
               format(cur_epoch, cur_steps, total_steps, avg_loss, duration))
-    timer_start,timer_end
+    return timer_start
 
-
-def run_validation(cfg,model,stat_dict,valid_dataloaders):
+def run_validation(cfg,model,stat_dict,epoch,chkpt_path,lpath,
+                   optimizer,scheduler,dataset,valid_dataloaders,nval):
     avg_psnr, avg_ssim = 0.0, 0.0
     torch.cuda.empty_cache()
     torch.set_grad_enabled(False)
     test_log = ''
     model = model.eval()
+    stacking = stnls.agg.NonLocalGather(cfg.ps_stack,cfg.stride0,itype="float")
     for valid_dataloader in valid_dataloaders:
         avg_psnr, avg_ssim = 0.0, 0.0
         name = valid_dataloader['name']
         loader = valid_dataloader['dataloader']
+        if nval == -1: nval = len(loader)-1
+        # print("len(loader): ",len(loader))
+        # seed_everything(123)
         th.manual_seed(123)
-        for batch in tqdm(loader, ncols=80):
-            vid = batch['clean']
-            print("vid.shape: ",vid.shape)
+        # batch_idx = 0
+        # for batch in tqdm(loader, ncols=80):
+        loader_it = iter(loader)
+        for batch_idx in tqdm(range(nval), ncols=80):
+            batch = next(loader_it)
+            # print(dataset.groups[dataset.indices[batch['index'][0].item()]])
+            noisy = batch['noisy'].to(cfg.device)/255.
+            vid = batch['clean'].to(cfg.device)/255.
+            # print(th.mean((noisy-vid)**2).sqrt()*255.)
+            # print(vid[0,:,0,:2,:2])
+
+            # print("vid.shape: ",vid.shape)
             torch.cuda.empty_cache()
             with th.no_grad():
-                flows = model(vid)
+                # noisy = get_noisy(vid)
+                flows = model(noisy)
+            # print("flows.shape: ",flows.shape)
+            # print(flows[0,0,1])
 
-            psnr = utils.calc_psnr(vid,flow)
-            ssim = utils.calc_ssim(vid,flow)
-            avg_psnr += psnr
-            avg_ssim += ssim
+            # -- warping --
+            # flows = rearrange(flows,'b hd k t tr h w -> b hd t h w k tr')
+            flows = flows.contiguous()
+            # print("vid.shape,flows.shape: ",vid.shape,flows.shape)
+            ones = th.ones_like(flows[...,0])
+            stack = stacking(vid,ones,flows)#[:,0]
 
-        avg_psnr = round(avg_psnr/len(loader) + 5e-3, 2)
-        avg_ssim = round(avg_ssim/len(loader) + 5e-5, 4)
+            # -- compute metrics --
+            # print("vid.shape,stack.shape: ",vid.shape,stack.shape)
+            psnr = utils.calc_psnr(vid,stack)
+            ssim = utils.calc_ssim(vid,stack)
+            # print(psnr)
+            # print(ssim)
+            # exit()
+            avg_psnr += np.mean(psnr).item()
+            avg_ssim += np.mean(ssim).item()
+
+            if batch_idx > nval: break
+            # batch_idx += 1
+
+        avg_psnr = round(avg_psnr/nval + 5e-3, 2)
+        avg_ssim = round(avg_ssim/nval + 5e-5, 4)
+        # print(stat_dict[name])
         stat_dict[name]['psnrs'].append(avg_psnr)
         stat_dict[name]['ssims'].append(avg_ssim)
 
@@ -187,28 +258,35 @@ def run_validation(cfg,model,stat_dict,valid_dataloaders):
         if stat_dict[name]['best_ssim']['value'] < avg_ssim:
             stat_dict[name]['best_ssim']['value'] = avg_ssim
             stat_dict[name]['best_ssim']['epoch'] = epoch
-        test_log += '[{}-X{}], PSNR/SSIM: {:.2f}/{:.4f} \
-        (Best: {:.2f}/{:.4f}, Epoch: {}/{})\n'.format(name, cfg.upscale,\
-            float(avg_psnr), float(avg_ssim),stat_dict[name]['best_psnr']['value'], stat_dict[name]['best_ssim']['value'],stat_dict[name]['best_psnr']['epoch'], stat_dict[name]['best_ssim']['epoch'])
+        args = (name,float(avg_psnr), float(avg_ssim),
+                stat_dict[name]['best_psnr']['value'],
+                stat_dict[name]['best_ssim']['value'],
+                stat_dict[name]['best_psnr']['epoch'],
+                stat_dict[name]['best_ssim']['epoch'])
+        test_log += '[{}], PSNR/SSIM: {:.2f}/{:.4f} \
+        (Best: {:.2f}/{:.4f}, Epoch: {}/{})\n'.format(*args)
         print(test_log)
         sys.stdout.flush()
 
     # -- save model --
     model_str = '%s-epoch=%02d.ckpt'%(cfg.uuid,epoch-1) # "start at 0"
     saved_model_path = os.path.join(chkpt_path,model_str)
-    torch.save({
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'scheduler_state_dict': scheduler.state_dict(),
-        'stat_dict': stat_dict
-    }, saved_model_path)
-    torch.set_grad_enabled(True)
+    print("saveing model at path [%s]" % str(saved_model_path))
+    if not(optimizer is None):
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict(),
+            'stat_dict': stat_dict
+        }, saved_model_path)
+        torch.set_grad_enabled(True)
 
-    # -- save state dict --
-    stat_dict_name = os.path.join(logging_path, 'stat_dict_%d.yml' % epoch)
-    with open(stat_dict_name, 'w') as stat_dict_file:
-        yaml.dump(stat_dict, stat_dict_file, default_flow_style=False)
+        # -- save state dict --
+        logging_path = lpath
+        stat_dict_name = os.path.join(logging_path, 'stat_dict_%d.yml' % epoch)
+        with open(stat_dict_name, 'w') as stat_dict_file:
+            yaml.dump(stat_dict, stat_dict_file, default_flow_style=False)
 
 
 def init_logging(cfg,model,optimizer,scheduler):
@@ -235,7 +313,8 @@ def init_logging(cfg,model,optimizer,scheduler):
             logging_path = os.path.join(cfg.log_path, 'logs', experiment_name)
             chkpt_path = os.path.join(cfg.log_path, 'checkpoints', experiment_name)
             log_name = os.path.join(logging_path,'log.txt')
-            print('select {}, resume training from epoch {}.'.format(chkpt_files[-1], start_epoch))
+            print('select {}, resume training from epoch {}.'\
+                  .format(chkpt_files[-1], start_epoch))
             # if not os.path.exists(logging_path): os.makedirs(logging_path)
             # if not os.path.exists(chkpt_path): os.makedirs(chkpt_path)
     else:
@@ -272,4 +351,4 @@ def init_logging(cfg,model,optimizer,scheduler):
     # print(model)
     # exit()
     sys.stdout.flush()
-    return stat_dict,start_epoch
+    return stat_dict,start_epoch,chkpt_path,logging_path

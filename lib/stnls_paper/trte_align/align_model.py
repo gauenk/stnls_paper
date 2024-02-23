@@ -6,6 +6,7 @@ import torchvision
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 
+from dev_basics import flow as flow_pkg
 import stnls
 from .spynet import SpyNet
 from ..gda import load_model as init_gda
@@ -28,7 +29,7 @@ class AlignModel(nn.Module):
         self.wt = 1
         self.stride0 = cfg.stride0
         self.align_type = align_type
-        self.spynet = SpyNet(load_path=load_path)
+        self.spynet = [SpyNet(load_path=load_path).cuda()]
         if self.align_type == "gda":
             self.model = init_gda(cfg)
         elif self.align_type == "stnls":
@@ -39,13 +40,36 @@ class AlignModel(nn.Module):
     def forward(self,vid):
 
         # -- compute optical flows --
-        fflow,bflow = self.spynet.compute_flow(vid)
-        print(fflow.shape,bflow.shape)
+        # fflow,bflow = self.spynet[0].compute_flow(vid)
+        # print(fflow.shape,bflow.shape)
+        # wt = vid.shape[1]-1
+
+        flows = flow_pkg.orun(vid,True,ftype="cv2")
+        fflow,bflow = flows.fflow,flows.bflow
+
         flows = stnls.nn.search_flow(fflow,bflow,self.wt,self.stride0)
 
+        # flows = flow.orun(nvid,cfg.flow,ftype="cv2")
+        # flow_norm = (flows.fflow.abs().mean() + flows.bflow.abs().mean()).item()/2.
+        # # acc_flows = stnls.nn.accumulate_flow(flows.fflow,flows.bflow)
+        # acc_flows = stnls.nn.search_flow(flows.fflow,flows.bflow,cfg.wt,cfg.stride0)
+
+        # flows = stnls.nn.accumulate_flow(fflow,bflow,self.stride0)
+        # print(vid.min(),vid.max())
+        # print(flows.shape)
+        # print(fflow.min(),fflow.max())
+        # print(bflow.min(),bflow.max())
+        # print(flows.min(),flows.max())
+        # exit()
+
         # -- compute topk flows [aka the "corrections"] --
-        flows_k = self.model.paired_vids(vid, vid, flows, self.wt, skip_self=False)[1]
-        print("flows_k.shape: ",flows_k.shape)
+        # print("\tvid.shape: ",vid.shape)
+        # print("\tflows.shape: ",flows.shape)
+        flows_k = self.model.paired_vids(vid, vid, flows, self.wt, skip_self=True)[1]
+        # print("flows_k.shape: ",flows_k.shape)
+        # # print(flows_k[0,0,0,5,5])
+        # # print(flows_k[0,0,0,60,60])
+        # exit()
 
         return flows_k
 
