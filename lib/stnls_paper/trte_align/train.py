@@ -44,6 +44,7 @@ def extract_defaults(_cfg):
         # "use_intra":True,"use_ffn":False,"use_nat":False,"nat_ksize":9,
         # "affinity_softmax":1.,"topk":100,"intra_version":"v1",
         #
+        "ws":10,"ps":1,"loss_fxn_input":"noisy",
         "align_type":"gda",
         # "align_type":"stnls",
         "nepochs":10,"attn_size":1,"ps_stack":3,
@@ -97,7 +98,10 @@ def run(cfg):
 
     ## definitions of model
     model = AlignModel(cfg,cfg.align_type,cfg.spynet_path)
+    num_parameters = sum(map(lambda x: x.numel(), model.parameters()))
+    print('#Params : {:<.4f} [K]'.format(num_parameters / 10 ** 3))
     print(model)
+    # exit()
     model = nn.DataParallel(model).to(device)
 
     ## definition of loss and optimizer
@@ -165,7 +169,7 @@ def run_batch(cfg,epoch_loss,vid,model,loss_func,optimizer,
     noisy = get_noisy(vid)
     flow_k = model(noisy)
     # print("flow_k.shape: ",flow_k.shape)
-    loss = loss_func(vid,flow_k)
+    loss = loss_func(vid,noisy,flow_k)
     # print(loss.item())
     loss.backward()
     optimizer.step()
@@ -226,6 +230,7 @@ def run_validation(cfg,model,stat_dict,epoch,chkpt_path,lpath,
             # -- warping --
             # flows = rearrange(flows,'b hd k t tr h w -> b hd t h w k tr')
             flows = flows.contiguous()
+            flows[...,1:] = flows[...,1:].flip(-1)
             # print("vid.shape,flows.shape: ",vid.shape,flows.shape)
             ones = th.ones_like(flows[...,0])
             stack = stacking(vid,ones,flows)#[:,0]

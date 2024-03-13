@@ -14,7 +14,7 @@ from stnls.search.utils import paired_vids as _paired_vids
 from einops import rearrange
 
 def load_model(cfg):
-    model = GdaForVideoAlignment(attn_size=cfg.attn_size)
+    model = GdaForVideoAlignment(attn_size=cfg.k)#attn_size)
     return model
 
 class GdaForVideoAlignment(nn.Module):
@@ -66,6 +66,7 @@ class GdaForVideoAlignment(nn.Module):
         warped_frame0 = flow_warp(frame0,flow[:,0])
         frame0,frame1 = frame0[:,None],frame1[:,None]
         warped_frame0 = warped_frame0[:,None]
+        # flow = flow.flip(2)
         flows_k = self.conv_offset(torch.cat([frame1,warped_frame0,flow], 2)\
                                .transpose(1, 2)).transpose(1, 2)
         flows_k = self.max_residue_magnitude * torch.tanh(flows_k)
@@ -78,6 +79,7 @@ class GdaForVideoAlignment(nn.Module):
         K = flows_k.shape[-2]
         # print("flows_k.shape,flow.shape: ",flows_k.shape,flow.shape)
         # flows_k = flows_k + flow.flip(2).repeat(1,1,flow.size(2)//2,1,1)
+        # flows_k = th.zeros_like(flows_k)
         flows_k = flows_k + flow
         # print("flows_k.shape,flow.shape: ",flows_k.shape,flow.shape)
 
